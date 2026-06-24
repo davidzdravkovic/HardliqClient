@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FolderIcon, TaskIcon } from './TreeIcons';
+import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
 
 // PAGE-SIZE: wire pagination here later (currently loads all items).
 const CONTENTS_PAGE_SIZE = null;
@@ -128,6 +130,8 @@ export default function TopicDetail({
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const menuRef = useRef(null);
+  const panelRef = useRef(null);
+  const isMobileSheet = useIsMobileSheet();
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
 
@@ -139,9 +143,10 @@ export default function TopicDetail({
     if (!open) return undefined;
 
     function handlePointerDown(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpen(false);
-      }
+      const target = event.target;
+      if (menuRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
 
     function handleKeyDown(event) {
@@ -189,7 +194,13 @@ export default function TopicDetail({
   );
 
   const panel = open ? (
-    <div id={scrollPanelId} className="folder-contents-panel">
+    <div
+      id={scrollPanelId}
+      ref={panelRef}
+      className={`folder-contents-panel${isMobileSheet ? ' folder-mobile-sheet' : ''}`}
+      role="region"
+      aria-label="Folder contents"
+    >
       {childrenLoading ? (
         <p className="folder-contents-muted">Loading…</p>
       ) : allItems.length === 0 ? (
@@ -224,7 +235,9 @@ export default function TopicDetail({
     return (
       <div className="folder-contents-menu" ref={menuRef}>
         {toggle}
-        {panel}
+        {isMobileSheet
+          ? panel && createPortal(panel, document.body)
+          : panel}
       </div>
     );
   }

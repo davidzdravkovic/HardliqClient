@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
 
 function MenuDotsIcon() {
   return (
@@ -34,6 +36,8 @@ export default function FolderOptions({
   const [internalOpen, setInternalOpen] = useState(false);
   const [view, setView] = useState('menu');
   const menuRef = useRef(null);
+  const panelRef = useRef(null);
+  const isMobileSheet = useIsMobileSheet();
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
 
@@ -55,9 +59,10 @@ export default function FolderOptions({
     if (!open) return undefined;
 
     function handlePointerDown(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpen(false);
-      }
+      const target = event.target;
+      if (menuRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
 
     function handleKeyDown(event) {
@@ -181,7 +186,10 @@ export default function FolderOptions({
   );
 
   const panel = open ? (
-    <div className="folder-options-panel">
+    <div
+      ref={panelRef}
+      className={`folder-options-panel${isMobileSheet ? ' folder-mobile-sheet' : ''}`}
+    >
       {view === 'menu' && menuList}
       {view === 'topic' && topicForm}
       {view === 'task' && taskForm}
@@ -198,7 +206,9 @@ export default function FolderOptions({
     return (
       <div className="folder-header-menu" ref={menuRef}>
         {toggle}
-        {panel}
+        {isMobileSheet
+          ? panel && createPortal(panel, document.body)
+          : panel}
       </div>
     );
   }

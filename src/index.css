@@ -1705,6 +1705,10 @@ textarea {
   display: none;
 }
 
+.folder-mobile-sheet {
+  /* mobile overrides in mobile-v1.css */
+}
+
 .folder-contents-title {
   margin: 0 0 0.5rem;
   font-size: 0.8125rem;
