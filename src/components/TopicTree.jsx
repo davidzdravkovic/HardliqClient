@@ -63,11 +63,13 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
   }, [node.id]);
 
   useEffect(() => {
-    if (refreshEvent && refreshEvent.parentId === node.id) {
+    if (!refreshEvent) return;
+
+    if (refreshEvent.parentId === node.id) {
       setExpanded(true);
       loadChildren();
     }
-  }, [refreshEvent, node.id, loadChildren]);
+  }, [refreshEvent?.id, node.id, loadChildren]);
 
   async function handleToggle(n) {
     if (selectedId === n.id) {
@@ -115,9 +117,14 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent, showAllT
   }, []);
 
   useEffect(() => {
-    if (!refreshEvent || refreshEvent.parentId !== null) return;
+    if (!refreshEvent) return;
+
+    if (refreshEvent.deletedTopicId != null) {
+      setRoots((prev) => prev.filter((node) => node.id !== refreshEvent.deletedTopicId));
+    }
+
     getTopics(null).then((data) => setRoots(data.items || []));
-  }, [refreshEvent]);
+  }, [refreshEvent?.id]);
 
   if (loading) return <p className="tree-muted">Loading…</p>;
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { getTopics } from '../api';
 import { FolderIcon, TaskIcon } from './TreeIcons';
 import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
 
@@ -46,14 +47,10 @@ function formatShortDate(value) {
   }
 }
 
-function buildContentsList(directChildren, folderTasks) {
-  const directIds = new Set(directChildren.map((item) => item.id));
-  const nestedTasks = folderTasks.filter((item) => !directIds.has(item.id));
-
+function buildRootContentsList(directChildren) {
   const folders = directChildren.filter((item) => item.type === 'topic');
-  const directTasks = directChildren.filter((item) => item.type === 'task');
-
-  return [...folders, ...directTasks, ...nestedTasks];
+  const tasks = directChildren.filter((item) => item.type === 'task');
+  return [...folders, ...tasks];
 }
 
 function summaryLabel(items, stats) {
@@ -74,23 +71,7 @@ function summaryLabel(items, stats) {
   return progressLine ? `${countLine} — ${progressLine}` : countLine;
 }
 
-function FolderRow({ item, onSelect }) {
-  return (
-    <li>
-      <button type="button" className="folder-contents-row" onClick={() => onSelect?.(item)}>
-        <span className="folder-contents-icon" aria-hidden="true">
-          <FolderIcon />
-        </span>
-        <span className="folder-contents-body">
-          <span className="folder-contents-name">{item.name}</span>
-          <span className="folder-contents-meta">Folder</span>
-        </span>
-      </button>
-    </li>
-  );
-}
-
-function TaskRow({ item, onSelect, nested }) {
+function TaskRow({ item, onSelect }) {
   const hint = taskProgressHint(item);
 
   return (
@@ -101,9 +82,6 @@ function TaskRow({ item, onSelect, nested }) {
         </span>
         <span className="folder-contents-body">
           <span className="folder-contents-name">{item.name}</span>
-          {nested && item.parentName && (
-            <span className="folder-contents-location">in {item.parentName}</span>
-          )}
           {item.description && (
             <span className="folder-contents-desc">{item.description}</span>
           )}
@@ -117,10 +95,111 @@ function TaskRow({ item, onSelect, nested }) {
   );
 }
 
+function FolderRow({
+  item,
+  depth,
+  expanded,
+  loading,
+  children,
+  onToggleExpand,
+  onOpen,
+  onSelectChild,
+  expandedIds,
+  childrenCache,
+  loadingIds,
+}) {
+  return (
+    <li className="folder-contents-folder">
+      <div className={`folder-contents-row folder-contents-row-folder${expanded ? ' is-expanded' : ''}`}>
+        <button
+          type="button"
+          className="folder-contents-expand"
+          aria-expanded={expanded}
+          aria-label={expanded ? `Collapse ${item.name}` : `Expand ${item.name}`}
+          onClick={() => onToggleExpand(item.id)}
+          disabled={loading}
+        >
+          <span aria-hidden="true">{loading ? '…' : expanded ? '▾' : '▸'}</span>
+        </button>
+        <span className="folder-contents-icon" aria-hidden="true">
+          <FolderIcon open={expanded} />
+        </span>
+        <span className="folder-contents-body">
+          <span className="folder-contents-name">{item.name}</span>
+          <span className="folder-contents-meta">Folder</span>
+        </span>
+        <button
+          type="button"
+          className="folder-contents-open"
+          onClick={() => onOpen(item)}
+        >
+          Open
+        </button>
+      </div>
+
+      {expanded && (
+        <ul className="folder-contents-nested" data-depth={depth + 1}>
+          {children === null ? (
+            <li className="folder-contents-muted folder-contents-nested-status">Loading…</li>
+          ) : children.length === 0 ? (
+            <li className="folder-contents-muted folder-contents-nested-status">Empty folder</li>
+          ) : (
+            children.map((child) => (
+              <ContentsItem
+                key={child.id}
+                item={child}
+                depth={depth + 1}
+                onSelectChild={onSelectChild}
+                expandedIds={expandedIds}
+                childrenCache={childrenCache}
+                loadingIds={loadingIds}
+                onToggleExpand={onToggleExpand}
+              />
+            ))
+          )}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function ContentsItem({
+  item,
+  depth = 0,
+  onSelectChild,
+  expandedIds,
+  childrenCache,
+  loadingIds,
+  onToggleExpand,
+}) {
+  if (item.type === 'task') {
+    return <TaskRow item={item} onSelect={onSelectChild} />;
+  }
+
+  const expanded = expandedIds.has(item.id);
+  const loading = loadingIds.has(item.id);
+  const children = expanded ? (childrenCache[item.id] ?? null) : null;
+
+  return (
+    <FolderRow
+      item={item}
+      depth={depth}
+      expanded={expanded}
+      loading={loading}
+      children={children}
+      onToggleExpand={onToggleExpand}
+      onOpen={onSelectChild}
+      onSelectChild={onSelectChild}
+      expandedIds={expandedIds}
+      childrenCache={childrenCache}
+      loadingIds={loadingIds}
+    />
+  );
+}
+
 export default function TopicDetail({
   folderId,
   directChildren = [],
-  folderTasks = [],
   stats = null,
   childrenLoading,
   onSelectChild,
@@ -129,6 +208,9 @@ export default function TopicDetail({
   onOpenChange,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
+  const [childrenCache, setChildrenCache] = useState({});
+  const [loadingIds, setLoadingIds] = useState(() => new Set());
   const menuRef = useRef(null);
   const panelRef = useRef(null);
   const isMobileSheet = useIsMobileSheet();
@@ -138,6 +220,41 @@ export default function TopicDetail({
   useEffect(() => {
     if (!isControlled) setInternalOpen(false);
   }, [folderId, isControlled]);
+
+  useEffect(() => {
+    setExpandedIds(new Set());
+    setChildrenCache({});
+    setLoadingIds(new Set());
+  }, [folderId]);
+
+  async function handleToggleExpand(id) {
+    if (expandedIds.has(id)) {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      return;
+    }
+
+    if (childrenCache[id] === undefined) {
+      setLoadingIds((prev) => new Set(prev).add(id));
+      try {
+        const data = await getTopics(id);
+        setChildrenCache((prev) => ({ ...prev, [id]: data.items || [] }));
+      } catch {
+        setChildrenCache((prev) => ({ ...prev, [id]: [] }));
+      } finally {
+        setLoadingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    }
+
+    setExpandedIds((prev) => new Set(prev).add(id));
+  }
 
   useEffect(() => {
     if (!open) return undefined;
@@ -169,10 +286,9 @@ export default function TopicDetail({
 
   const scrollPanelId = `folder-contents-scroll-${folderId}`;
 
-  const directIds = new Set(directChildren.map((item) => item.id));
-  const allItems = buildContentsList(directChildren, folderTasks);
-  const visibleItems = CONTENTS_PAGE_SIZE ? allItems.slice(0, CONTENTS_PAGE_SIZE) : allItems;
-  const summary = summaryLabel(allItems, stats);
+  const rootItems = buildRootContentsList(directChildren);
+  const visibleItems = CONTENTS_PAGE_SIZE ? rootItems.slice(0, CONTENTS_PAGE_SIZE) : rootItems;
+  const summary = summaryLabel(rootItems, stats);
 
   const toggle = (
     <button
@@ -185,7 +301,7 @@ export default function TopicDetail({
     >
       <span className="folder-contents-toggle-main">
         <span className="folder-contents-toggle-label">
-          Contents{allItems.length > 0 ? ` (${allItems.length})` : ''}
+          Contents{rootItems.length > 0 ? ` (${rootItems.length})` : ''}
         </span>
         <span className="folder-contents-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
       </span>
@@ -203,26 +319,21 @@ export default function TopicDetail({
     >
       {childrenLoading ? (
         <p className="folder-contents-muted">Loading…</p>
-      ) : allItems.length === 0 ? (
+      ) : rootItems.length === 0 ? (
         <p className="folder-workspace-empty">Nothing in this folder yet.</p>
       ) : (
         <ul className="folder-contents-list">
-          {visibleItems.map((item) => {
-            const nested = item.type === 'task' && !directIds.has(item.id);
-
-            if (item.type === 'topic') {
-              return <FolderRow key={item.id} item={item} onSelect={onSelectChild} />;
-            }
-
-            return (
-              <TaskRow
-                key={item.id}
-                item={item}
-                onSelect={onSelectChild}
-                nested={nested}
-              />
-            );
-          })}
+          {visibleItems.map((item) => (
+            <ContentsItem
+              key={item.id}
+              item={item}
+              onSelectChild={onSelectChild}
+              expandedIds={expandedIds}
+              childrenCache={childrenCache}
+              loadingIds={loadingIds}
+              onToggleExpand={handleToggleExpand}
+            />
+          ))}
         </ul>
       )}
     </div>

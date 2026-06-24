@@ -119,33 +119,23 @@ export default function Dashboard() {
 
 
   function selectItem(item) {
-
     if (!item) {
-
       setSelected(null);
-
     } else {
-
       setSelected({
-
         id: item.id,
-
         name: item.name,
-
         type: item.type,
-
-        parentId: item.parentId ?? (selected?.type === 'topic' ? selected.id : selected?.parentId) ?? null,
-
+        parentId:
+          item.parentId ??
+          (item.type === 'task' ? (selected?.type === 'topic' ? selected.id : selected?.parentId) : null) ??
+          null,
         description: item.description ?? undefined,
-
         status: item.status ?? undefined,
-
       });
-
     }
 
     closeSidebar();
-
   }
 
 
@@ -287,10 +277,8 @@ export default function Dashboard() {
 
 
 
-  function refresh(parentId) {
-
-    setRefreshEvent({ id: Date.now(), parentId });
-
+  function refresh(parentId, { deletedTopicId } = {}) {
+    setRefreshEvent({ id: Date.now(), parentId, deletedTopicId });
   }
 
 
@@ -572,34 +560,22 @@ export default function Dashboard() {
 
 
     const parentId = deleteConfirm.parentId ?? null;
+    const deletedTopicId = deleteConfirm.topicId;
 
     setError('');
-
     setTaskSaving(true);
 
-
-
     try {
-
       if (deleteConfirm.type === 'task') {
-
         await deleteTask(deleteConfirm.topicId);
-
         setTaskEditMode(null);
-
       } else {
-
         await deleteTopic(deleteConfirm.topicId);
-
       }
 
-
-
       setDeleteConfirm(null);
-
       setSelected(null);
-
-      refresh(parentId);
+      refresh(parentId, { deletedTopicId });
 
     } catch (err) {
 

@@ -199,6 +199,7 @@ export default function WorkspaceStats({ topicId, refreshKey, children, headerMe
       return (
         <div className="folder-workspace-layout">
           <section className="folder-workspace">
+            {folderStatsPanel(<div className="stats-progress stats-progress-skeleton" />, { loading: true })}
             <header className="folder-workspace-header">
               <div className="folder-workspace-hero workspace-stats-loading">
                 <p>Loading…</p>
@@ -206,7 +207,6 @@ export default function WorkspaceStats({ topicId, refreshKey, children, headerMe
             </header>
             {children}
           </section>
-          {folderStatsPanel(<div className="stats-progress stats-progress-skeleton" />, { loading: true })}
         </div>
       );
     }
@@ -243,6 +243,7 @@ export default function WorkspaceStats({ topicId, refreshKey, children, headerMe
     return (
       <div className="folder-workspace-layout">
         <section className="folder-workspace">
+          {folderStatsPanel(<StatsMetrics stats={stats} period={period} panel />)}
           <header className="folder-workspace-header">
             <div className="folder-workspace-hero">
               <h2 className="folder-workspace-title">{title}</h2>
@@ -255,7 +256,6 @@ export default function WorkspaceStats({ topicId, refreshKey, children, headerMe
           </header>
           {children}
         </section>
-        {folderStatsPanel(<StatsMetrics stats={stats} period={period} panel />)}
       </div>
     );
   }
