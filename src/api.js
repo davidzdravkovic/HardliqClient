@@ -81,6 +81,10 @@ export function getTopics(parentId) {
   return request(`/topics${query}`);
 }
 
+export function getFolderTasks(topicId) {
+  return request(`/topics/${topicId}/tasks`);
+}
+
 export function getTaskStats(topicId, since) {
   const params = new URLSearchParams();
   if (topicId != null) params.set('topicId', String(topicId));

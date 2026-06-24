@@ -10,7 +10,7 @@ import TopicTree from '../components/TopicTree';
 
 import TaskDetail from '../components/TaskDetail';
 
-import TopicDetail from '../components/TopicDetail';
+import FolderWorkspace from '../components/FolderWorkspace';
 
 import WorkspaceStats from '../components/WorkspaceStats';
 
@@ -35,6 +35,10 @@ import {
   getTopicDeleteSummary,
 
   getTopics,
+
+  getFolderTasks,
+
+  getTaskStats,
 
   patchTask,
 
@@ -69,6 +73,12 @@ export default function Dashboard() {
 
 
   const [childType, setChildType] = useState(null);
+
+  const [directChildren, setDirectChildren] = useState([]);
+
+  const [folderTasks, setFolderTasks] = useState([]);
+
+  const [folderStats, setFolderStats] = useState(null);
 
   const [childrenLoading, setChildrenLoading] = useState(false);
 
@@ -110,7 +120,29 @@ export default function Dashboard() {
 
   function selectItem(item) {
 
-    setSelected(item);
+    if (!item) {
+
+      setSelected(null);
+
+    } else {
+
+      setSelected({
+
+        id: item.id,
+
+        name: item.name,
+
+        type: item.type,
+
+        parentId: item.parentId ?? (selected?.type === 'topic' ? selected.id : selected?.parentId) ?? null,
+
+        description: item.description ?? undefined,
+
+        status: item.status ?? undefined,
+
+      });
+
+    }
 
     closeSidebar();
 
@@ -129,14 +161,6 @@ export default function Dashboard() {
   const taskStatus = selected?.status || 'Pending';
 
   const canUpdateStatus = taskStatus === 'Pending';
-
-
-
-  const forcedMode =
-
-    childType === 'topic' ? 'topic' : childType === 'task' ? 'task' : null;
-
-  const activeMode = forcedMode ?? addMode;
 
 
 
@@ -170,6 +194,12 @@ export default function Dashboard() {
 
       setChildType(null);
 
+      setDirectChildren([]);
+
+      setFolderTasks([]);
+
+      setFolderStats(null);
+
       return;
 
     }
@@ -177,30 +207,65 @@ export default function Dashboard() {
 
 
     let cancelled = false;
+    const loadFolderId = selected.id;
 
     setChildrenLoading(true);
 
+    setDirectChildren([]);
+
+    setFolderTasks([]);
+
+    setFolderStats(null);
 
 
-    getTopics(selected.id)
 
-      .then((data) => {
+    Promise.allSettled([
+      getTopics(loadFolderId),
+      getFolderTasks(loadFolderId),
+      getTaskStats(loadFolderId),
+    ])
+
+      .then(([childrenResult, tasksResult, statsResult]) => {
 
         if (cancelled) return;
 
-        const items = data.items || [];
+        const childrenData = childrenResult.status === 'fulfilled'
+          ? childrenResult.value
+          : { items: [], childType: null };
 
-        setChildType(items.length > 0 ? data.childType : null);
+        const tasksData = tasksResult.status === 'fulfilled'
+          ? tasksResult.value
+          : { items: [] };
 
-        if (data.childType === 'topic') setAddMode('topic');
+        const statsData = statsResult.status === 'fulfilled'
+          ? statsResult.value
+          : null;
 
-        if (data.childType === 'task') setAddMode('task');
+        const items = childrenData.items || [];
+
+        setDirectChildren(items);
+
+        setFolderTasks(tasksData.items || []);
+
+        setFolderStats(statsData);
+
+        setChildType(items.length > 0 ? childrenData.childType : null);
 
       })
 
       .catch(() => {
 
-        if (!cancelled) setChildType(null);
+        if (!cancelled) {
+
+          setChildType(null);
+
+          setDirectChildren([]);
+
+          setFolderTasks([]);
+
+          setFolderStats(null);
+
+        }
 
       })
 
@@ -764,17 +829,57 @@ export default function Dashboard() {
 
               </section>
 
+            ) : isTopicSelected ? (
+
+              <FolderWorkspace
+
+                key={selected.id}
+
+                folderId={selected.id}
+
+                folderName={selected.name}
+
+                refreshKey={refreshEvent?.id}
+
+                directChildren={directChildren}
+
+                folderTasks={folderTasks}
+
+                folderStats={folderStats}
+
+                childrenLoading={childrenLoading}
+
+                childType={childType}
+
+                addMode={addMode}
+
+                onAddModeChange={setAddMode}
+
+                topicName={topicName}
+
+                onTopicNameChange={setTopicName}
+
+                onCreateTopic={handleCreateTopic}
+
+                taskName={taskName}
+
+                onTaskNameChange={setTaskName}
+
+                taskDesc={taskDesc}
+
+                onTaskDescChange={setTaskDesc}
+
+                onCreateTask={handleCreateTask}
+
+                onSelectChild={selectItem}
+
+                onDeleteClick={openTopicDeleteConfirm}
+
+                deleting={taskSaving}
+
+              />
+
             ) : (
-
-              <>
-
-                {isTopicSelected && (
-
-                  <WorkspaceStats topicId={selected.id} refreshKey={refreshEvent?.id} />
-
-                )}
-
-                {selected.type === 'task' ? (
 
                   <TaskDetail
 
@@ -820,189 +925,9 @@ export default function Dashboard() {
 
                   />
 
-                ) : (
-
-                  <TopicDetail
-
-                    childType={childType}
-
-                    childrenLoading={childrenLoading}
-
-                    onDeleteClick={openTopicDeleteConfirm}
-
-                    deleting={taskSaving}
-
-                  />
-
-                )}
-
-              </>
-
             )}
 
 
-
-            {isTopicSelected && (
-
-              <section className="add-section">
-
-                {childrenLoading ? (
-
-                  <p className="add-note">Loading...</p>
-
-                ) : (
-
-                  <>
-
-                    {!forcedMode ? (
-
-                      <>
-
-                        <p className="add-note">What goes in <strong>{selected.name}</strong>?</p>
-
-                        <p className="add-hint">Folders or tasks. Pick one.</p>
-
-                        <div className="add-picker" role="group" aria-label="What to add">
-
-                          <button
-
-                            type="button"
-
-                            className={`add-pick add-pick-folder ${activeMode === 'topic' ? 'active' : ''}`}
-
-                            onClick={() => setAddMode('topic')}
-
-                          >
-
-                            <span className="add-pick-label">Folder</span>
-
-                            <span className="add-pick-hint">Nest another topic</span>
-
-                          </button>
-
-                          <button
-
-                            type="button"
-
-                            className={`add-pick add-pick-task ${activeMode === 'task' ? 'active' : ''}`}
-
-                            onClick={() => setAddMode('task')}
-
-                          >
-
-                            <span className="add-pick-label">Task</span>
-
-                            <span className="add-pick-hint">Something to do</span>
-
-                          </button>
-
-                        </div>
-
-                      </>
-
-                    ) : (
-
-                      <p className={`add-form-title ${forcedMode === 'topic' ? 'add-form-title-folder' : 'add-form-title-task'}`}>
-
-                        {forcedMode === 'topic' ? 'Add another folder' : 'Add another task'}
-
-                      </p>
-
-                    )}
-
-
-
-                    {activeMode === 'topic' && (
-
-                      <form className="add-form add-form-folder add-inline" onSubmit={handleCreateTopic}>
-
-                        {!forcedMode && (
-
-                          <p className="add-form-title add-form-title-folder">Add a folder</p>
-
-                        )}
-
-                        <div className="add-form-row">
-
-                          <input
-
-                            className="field"
-
-                            placeholder="Folder name"
-
-                            value={topicName}
-
-                            onChange={(e) => setTopicName(e.target.value)}
-
-                            autoFocus
-
-                          />
-
-                          <button type="submit" className="btn btn-folder btn-sm">Add</button>
-
-                        </div>
-
-                      </form>
-
-                    )}
-
-
-
-                    {activeMode === 'task' && (
-
-                      <form className="add-form add-form-task" onSubmit={handleCreateTask}>
-
-                        {!forcedMode && (
-
-                          <p className="add-form-title add-form-title-task">Add a new task</p>
-
-                        )}
-
-                        <input
-
-                          className="field"
-
-                          placeholder="What needs doing?"
-
-                          value={taskName}
-
-                          onChange={(e) => setTaskName(e.target.value)}
-
-                          autoFocus
-
-                        />
-
-                        <textarea
-
-                          className="field"
-
-                          placeholder="What's the task about?"
-
-                          rows={2}
-
-                          value={taskDesc}
-
-                          onChange={(e) => setTaskDesc(e.target.value)}
-
-                        />
-
-                        <button type="submit" className="btn btn-primary btn-sm add-task-submit">
-
-                          Add task
-
-                        </button>
-
-                      </form>
-
-                    )}
-
-                  </>
-
-                )}
-
-              </section>
-
-            )}
 
           </main>
 

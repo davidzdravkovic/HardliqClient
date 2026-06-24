@@ -189,12 +189,282 @@
     display: none;
   }
 
-  .workspace-stats:has(.workspace-stats-empty) + .topic-detail-minimal .muted {
+  .folder-workspace-layout:has(.workspace-stats-empty) .folder-workspace-body .folder-workspace-empty {
     display: none;
+  }
+
+  .main-content:has(.folder-workspace-layout) {
+    max-width: none;
+  }
+
+  /* —— folder workspace (mobile) —— */
+  .folder-workspace-layout {
+    flex-direction: column;
+    gap: 0.55rem;
+    overflow: visible;
+  }
+
+  .folder-workspace {
+    overflow: visible;
+    border-radius: var(--radius-sm);
+  }
+
+  .folder-stats-panel {
+    order: -1;
+    width: 100%;
+    position: static;
+    padding: 0.85rem 0.75rem;
+    border-radius: var(--radius-sm);
+    box-shadow: none;
+  }
+
+  .folder-stats-panel .stats-progress {
+    height: 0.45rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .folder-stats-panel .stats-piles {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+  }
+
+  .folder-stats-panel .stats-pile {
+    padding: 0.45rem 0.2rem;
+    align-items: center;
+  }
+
+  .folder-stats-panel .stats-pile-count {
+    font-size: 1.0625rem;
+  }
+
+  .folder-stats-panel .stats-pile-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  .folder-stats-panel .stats-pile-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .folder-workspace-header {
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .folder-workspace-hero {
+    padding: 1.1rem 3.25rem 0.95rem 1rem;
+  }
+
+  .folder-workspace-title {
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+
+  .folder-workspace-subtitle {
+    font-size: 0.75rem;
+    line-height: 1.35;
+    max-width: none;
+  }
+
+  .folder-workspace-period {
+    margin-top: 0.25rem;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.55rem;
+    font-size: 16px;
+  }
+
+  .folder-workspace-header-actions {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.65rem;
+    padding: 0;
+    z-index: 25;
+  }
+
+  .folder-options-toggle {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-sm);
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .folder-workspace-controls {
+    padding: 0.85rem 1rem 1rem;
+    min-height: 0;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+
+  .folder-contents-menu {
+    width: 100%;
+  }
+
+  .folder-contents-toggle {
+    width: 100%;
+    max-width: none;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.2rem;
+    border-radius: var(--radius-sm);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .folder-contents-toggle-main {
+    width: 100%;
+  }
+
+  .folder-contents-summary {
+    flex-basis: auto;
+    padding-left: 0;
+    border-left: none;
+    margin-top: 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .folder-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 180;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(8, 10, 14, 0.52);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    animation: folder-backdrop-in 0.2s ease-out;
+  }
+
+  @keyframes folder-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes folder-sheet-up {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .folder-contents-panel,
+  .folder-options-panel {
+    position: fixed;
+    left: max(0.65rem, env(safe-area-inset-left));
+    right: max(0.65rem, env(safe-area-inset-right));
+    top: auto;
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: min(72dvh, 34rem);
+    margin: 0;
+    z-index: 190;
+    border-radius: var(--radius);
+    box-shadow:
+      0 -4px 32px rgba(0, 0, 0, 0.35),
+      0 16px 48px rgba(0, 0, 0, 0.28);
+    -webkit-overflow-scrolling: touch;
+    animation: folder-sheet-up 0.22s ease-out;
+  }
+
+  .folder-options-panel {
+    padding: 0.4rem;
+  }
+
+  .folder-options-menu-item {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9375rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .folder-options-form {
+    min-width: 0;
+    width: 100%;
+    padding: 0.55rem 0.6rem 0.65rem;
+  }
+
+  .folder-options-form-title {
+    font-size: 0.9375rem;
+  }
+
+  .folder-options-form .field,
+  .folder-options-form textarea.field {
+    font-size: 16px;
+  }
+
+  .folder-options-form .btn,
+  .folder-options-form .add-task-submit {
+    min-height: 2.75rem;
+    width: 100%;
+  }
+
+  .folder-options-form .add-form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .folder-options-form .add-form-row .btn {
+    width: 100%;
+  }
+
+  .folder-options-delete {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9375rem;
+  }
+
+  .folder-contents-panel {
+    padding: 0.4rem;
+  }
+
+  .folder-contents-scroll {
+    max-height: min(18rem, 45dvh);
+  }
+
+  .folder-workspace .stats-card {
+    padding-bottom: 0.75rem;
   }
 
   .topic-detail-minimal {
     margin-top: 0;
+  }
+
+  .folder-contents-row {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.7rem;
+    gap: 0.55rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .folder-contents-name {
+    font-size: 0.9375rem;
+  }
+
+  .folder-contents-status {
+    display: none;
+  }
+
+  .folder-contents-row-task {
+    align-items: flex-start;
+  }
+
+  .folder-contents-desc {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .main-detail-actions {
