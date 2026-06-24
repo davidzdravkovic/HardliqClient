@@ -94,6 +94,34 @@ export default function Dashboard() {
 
 
 
+  /* MOBILE-V1 START — revert: remove this block and sidebar/backdrop JSX below */
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+
+
+  function closeSidebar() {
+
+    setSidebarOpen(false);
+
+  }
+
+
+
+  function selectItem(item) {
+
+    setSelected(item);
+
+    closeSidebar();
+
+  }
+
+
+
+  /* MOBILE-V1 END */
+
+
+
   const parentId = selected?.type === 'topic' ? selected.id : selected?.parentId ?? null;
 
   const isTopicSelected = selected?.type === 'topic';
@@ -216,6 +244,8 @@ export default function Dashboard() {
 
     setSelected(null);
 
+    closeSidebar(); /* MOBILE-V1 */
+
     requestAnimationFrame(() => createTopicRef.current?.focus());
 
   }
@@ -241,6 +271,8 @@ export default function Dashboard() {
       status: item.status ?? undefined,
 
     });
+
+    closeSidebar(); /* MOBILE-V1 */
 
   }
 
@@ -540,7 +572,29 @@ export default function Dashboard() {
 
       <div className="dash-shell">
 
-        <aside className="sidebar">
+        {/* MOBILE-V1 START */}
+
+        {sidebarOpen && (
+
+          <button
+
+            type="button"
+
+            className="mobile-v1-sidebar-backdrop mobile-v1-visible"
+
+            aria-label="Close navigation menu"
+
+            onClick={closeSidebar}
+
+          />
+
+        )}
+
+        {/* MOBILE-V1 END */}
+
+
+
+        <aside className={`sidebar${sidebarOpen ? ' mobile-v1-open' : ''}`}>
 
           <div className="sidebar-brand">
 
@@ -560,7 +614,7 @@ export default function Dashboard() {
 
               className={`tree-all ${selected == null ? 'is-active' : ''}`}
 
-              onClick={() => setSelected(null)}
+              onClick={() => selectItem(null)}
 
             >
 
@@ -600,7 +654,7 @@ export default function Dashboard() {
 
               selectedId={selected?.id}
 
-              onSelect={setSelected}
+              onSelect={selectItem}
 
               refreshEvent={refreshEvent}
 
@@ -667,6 +721,8 @@ export default function Dashboard() {
             onSearchSelect={handleSearchSelect}
 
             onLogout={logout}
+
+            onMenuClick={() => setSidebarOpen(true)} /* MOBILE-V1 */
 
           />
 

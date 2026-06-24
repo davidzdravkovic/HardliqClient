@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import UserMenu from './UserMenu';
 import SearchResults from './SearchResults';
 
-export default function DashHeader({ username, search, onSearchChange, onSearchSelect, onLogout }) {
+export default function DashHeader({
+  username,
+  search,
+  onSearchChange,
+  onSearchSelect,
+  onLogout,
+  onMenuClick, /* MOBILE-V1 */
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -42,6 +49,19 @@ export default function DashHeader({ username, search, onSearchChange, onSearchS
 
   return (
     <header className="dash-header">
+      {/* MOBILE-V1 START */}
+      <button
+        type="button"
+        className="dash-menu-btn mobile-v1-only"
+        aria-label="Open navigation menu"
+        onClick={onMenuClick}
+      >
+        <svg viewBox="0 0 20 20" width="18" height="18" fill="none" aria-hidden="true">
+          <path d="M3.5 5.5h13M3.5 10h13M3.5 14.5h13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+      {/* MOBILE-V1 END */}
+
       <div className="dash-search-root" ref={rootRef}>
         <div className="dash-search-wrap">
           <span className="dash-search-icon" aria-hidden="true">

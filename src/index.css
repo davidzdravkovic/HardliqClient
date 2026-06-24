@@ -1925,51 +1925,10 @@ textarea {
 }
 
 @media (max-width: 600px) {
+  /* MOBILE-V1: sidebar drawer + header layout live in src/mobile-v1.css */
+
   .stats-piles {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .dash-shell {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    min-height: 0;
-    max-height: none;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .sidebar-section-topics {
-    max-height: 36vh;
-  }
-
-  .dash-header {
-    flex-wrap: wrap;
-    padding: 0.875rem 1rem;
-  }
-
-  .dash-search-root {
-    max-width: none;
-    width: 100%;
-    order: 2;
-  }
-
-  .dash-search-wrap {
-    max-width: none;
-  }
-
-  .dash-header-actions {
-    margin-left: auto;
-  }
-
-  .main-content {
-    padding: 1.25rem 1rem 2rem;
-  }
-
-  .recent-topics-grid {
-    grid-template-columns: 1fr;
   }
 
   .dash-layout {

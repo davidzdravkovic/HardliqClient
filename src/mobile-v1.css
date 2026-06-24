@@ -1,0 +1,222 @@
+/*
+ * MOBILE-V1 — optional mobile layout layer
+ *
+ * REVERT ALL MOBILE-V1 CHANGES:
+ * 1. Delete this file
+ * 2. Remove `import './mobile-v1.css'` from main.jsx
+ * 3. Remove MOBILE-V1 blocks from Dashboard.jsx and DashHeader.jsx
+ * 4. Restore index.css @media (max-width: 600px) sidebar rules if needed
+ */
+
+@media (max-width: 768px) {
+  .mobile-v1-only {
+    display: inline-flex;
+  }
+
+  .dash-shell {
+    flex-direction: row;
+  }
+
+  .dash-main {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .dash-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    padding-top: max(0.65rem, env(safe-area-inset-top));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .dash-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .dash-search-root {
+    order: 0;
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+  }
+
+  .dash-search {
+    font-size: 16px;
+    min-height: 2.75rem;
+  }
+
+  .dash-header-actions {
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+
+  .dash-icon-btn,
+  .dash-avatar {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .dash-search-panel {
+    max-height: min(18rem, 50dvh);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 120;
+    width: min(86vw, 280px);
+    min-height: 0;
+    max-height: none;
+    border-right: 1px solid var(--border);
+    border-bottom: none;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .sidebar.mobile-v1-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar-section-topics {
+    max-height: none;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-v1-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(8, 10, 14, 0.55);
+    cursor: pointer;
+  }
+
+  .main-content {
+    max-width: none;
+    padding: 1rem 0.75rem calc(1.5rem + env(safe-area-inset-bottom));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .stats-piles {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .stats-pile {
+    padding: 0.7rem 0.6rem;
+  }
+
+  .workspace-stats-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stats-period-select {
+    width: 100%;
+  }
+
+  .create-topic-card {
+    padding: 1.25rem;
+  }
+
+  .create-topic-card-form .btn {
+    width: 100%;
+  }
+
+  .recent-topics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .add-form-task,
+  .add-form-row {
+    max-width: none;
+  }
+
+  .add-form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-form-row .btn {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .add-pick,
+  .tree-row,
+  .tree-all,
+  .sidebar-footer-btn,
+  .btn {
+    min-height: 2.75rem;
+  }
+
+  .field,
+  .add-stack textarea.field {
+    font-size: 16px;
+  }
+
+  .confirm-dialog {
+    width: calc(100vw - 1.5rem);
+    max-width: 24rem;
+    margin: 0.75rem;
+  }
+
+  .auth-page {
+    padding: 1rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    align-items: flex-start;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+  }
+
+  .landing {
+    padding: 0 1rem 2rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-v1-only {
+    display: none !important;
+  }
+
+  .mobile-v1-sidebar-backdrop {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-v1-sidebar-backdrop:not(.mobile-v1-visible) {
+    display: none;
+  }
+}
