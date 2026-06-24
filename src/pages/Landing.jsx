@@ -103,7 +103,7 @@ export default function Landing() {
 
           <p className="landing-lead">
             Productivity is not about doing more. It is about knowing what is open,
-            what you closed, and whether you are actually moving. TaskManager tracks
+            what you closed, and whether you are actually moving. Hardliq tracks
             your tasks as you go and shows you that picture while it is still useful.
           </p>
 
@@ -182,7 +182,7 @@ export default function Landing() {
       </main>
 
       <footer className="landing-footer">
-        <p>TaskManager</p>
+        <p>Hardliq</p>
       </footer>
     </div>
   );
