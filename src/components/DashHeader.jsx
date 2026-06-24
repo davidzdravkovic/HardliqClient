@@ -73,7 +73,7 @@ export default function DashHeader({
           <input
             type="search"
             className="dash-search"
-            placeholder="Search topics or tasks…"
+            placeholder="Search…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={() => search.trim() && setOpen(true)}
