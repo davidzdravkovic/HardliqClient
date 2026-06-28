@@ -151,8 +151,15 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
   const fetchIdRef = useRef(0);
 
   useEffect(() => {
-    const requestId = Date.now();
+    const requestId = refreshEvent?.id ?? Date.now();
     fetchIdRef.current = requestId;
+    setLoading(true);
+
+    const removedId = refreshEvent?.movedTopicId ?? refreshEvent?.deletedTopicId;
+    if (removedId != null) {
+      setRoots((prev) => pruneRemovedItems(prev, removedId));
+    }
+
     getTopics(null)
       .then((data) => {
         if (requestId !== fetchIdRef.current) return;
@@ -161,23 +168,6 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
       .finally(() => {
         if (requestId === fetchIdRef.current) setLoading(false);
       });
-  }, []);
-
-  useEffect(() => {
-    if (!refreshEvent) return;
-
-    const requestId = refreshEvent.id;
-    fetchIdRef.current = requestId;
-
-    const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
-    if (removedId != null) {
-      setRoots((prev) => pruneRemovedItems(prev, removedId));
-    }
-
-    getTopics(null).then((data) => {
-      if (requestId !== fetchIdRef.current) return;
-      setRoots(data.items || []);
-    });
   }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId]);
 
   if (loading) return <p className="tree-muted">Loading…</p>;
