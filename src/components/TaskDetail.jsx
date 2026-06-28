@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { deleteTask, patchTask, patchTopic } from '../api';
 import { formatDeleteTaskMessage } from '../utils/deleteMessages';
 import ConfirmDialog from './ConfirmDialog';
+import MoveTargetPicker from './MoveTargetPicker';
 
 const TASK_UPDATE_STATUSES = ['Completed', 'Canceled'];
 
-export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onError }) {
+export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskMoved, onError }) {
   const [editMode, setEditMode] = useState(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editStatus, setEditStatus] = useState('Completed');
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   const taskStatus = task.status || 'Pending';
   const canUpdateStatus = taskStatus === 'Pending';
@@ -19,6 +21,7 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onError
   useEffect(() => {
     setEditMode(null);
     setDeleteOpen(false);
+    setMoveOpen(false);
     setEditName(task.name || '');
     setEditDescription(task.description || '');
     setEditStatus(TASK_UPDATE_STATUSES.includes(taskStatus) ? taskStatus : 'Completed');
@@ -88,6 +91,19 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onError
       await deleteTask(task.id);
       setDeleteOpen(false);
       onTaskDeleted?.();
+    } catch (err) {
+      onError?.(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleMoveTask(parentId) {
+    setSaving(true);
+    try {
+      await patchTopic(task.id, { moveParent: true, parentId });
+      setMoveOpen(false);
+      onTaskMoved?.(parentId);
     } catch (err) {
       onError?.(err.message);
     } finally {
@@ -211,7 +227,7 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onError
           )}
         </div>
 
-        {editMode === null && (
+        {editMode === null && !moveOpen && (
           <footer className="task-detail-footer">
             <div className="task-actions task-actions-primary">
               <button
@@ -223,6 +239,13 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onError
                 }}
               >
                 Rename task
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setMoveOpen(true)}
+              >
+                Move task
               </button>
               <button
                 type="button"
@@ -258,6 +281,18 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onError
               </button>
             </div>
           </footer>
+        )}
+
+        {moveOpen && (
+          <div className="task-detail-move">
+            <MoveTargetPicker
+              title="Move task to folder"
+              excludeId={task.id}
+              loading={saving}
+              onSelectFolder={(folder) => handleMoveTask(folder.id)}
+              onCancel={() => !saving && setMoveOpen(false)}
+            />
+          </div>
         )}
       </section>
 

@@ -140,6 +140,7 @@ function StatsMetrics({ stats, period, compact = false, panel = false }) {
 
 export default function WorkspaceStats({ topicId, displayName, refreshKey, children, headerMenu }) {
   const [stats, setStats] = useState(null);
+  const [statsError, setStatsError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('week');
   const isFolderView = topicId != null;
@@ -147,13 +148,17 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setStatsError(false);
 
     getTaskStats(topicId, getSinceForPeriod(period))
       .then((data) => {
         if (!cancelled) setStats(data);
       })
       .catch(() => {
-        if (!cancelled) setStats(null);
+        if (!cancelled) {
+          setStats(null);
+          setStatsError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -167,7 +172,11 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
   const title = isFolderView
     ? (displayName || stats?.topicName || 'Folder')
     : 'All topics';
-  const subtitle = stats?.scope === 'folder'   ? 'Tasks and progress in this folder' : 'Overview of all your tasks and progress';
+  const subtitle = isFolderView
+    ? 'Tasks and progress in this folder'
+    : 'Overview of all your tasks and progress';
+
+  const statsUnavailable = !loading && statsError && !stats;
 
   const periodSelect = (
     <select
@@ -213,6 +222,38 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
         <div className="stats-progress stats-progress-skeleton" aria-hidden="true" />
         <p>Loading stats…</p>
       </section>
+    );
+  }
+
+  if (statsUnavailable && !isFolderView) {
+    return (
+      <section className="stats-card workspace-stats workspace-stats-error" aria-label="Task statistics">
+        <p className="workspace-stats-empty">Could not load statistics.</p>
+      </section>
+    );
+  }
+
+  if (statsUnavailable && isFolderView) {
+    return (
+      <div className="folder-workspace-layout">
+        <section className="folder-workspace">
+          {folderStatsPanel(
+            <p className="workspace-stats-empty">Could not load statistics.</p>,
+            { loading: false }
+          )}
+          <header className="folder-workspace-header">
+            <div className="folder-workspace-hero">
+              <h2 className="folder-workspace-title">{title}</h2>
+              <p className="folder-workspace-subtitle">{subtitle}</p>
+              {periodSelect}
+            </div>
+            {headerMenu && (
+              <div className="folder-workspace-header-actions">{headerMenu}</div>
+            )}
+          </header>
+          {children}
+        </section>
+      </div>
     );
   }
 

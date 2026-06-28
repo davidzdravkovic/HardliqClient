@@ -24,7 +24,11 @@ export default function FolderWorkspace({
   onCreateTask,
   onRenameFolder,
   renaming,
+  onMoveFolder,
+  moving,
   onSelectChild,
+  onContentsChanged,
+  onError,
   onDeleteClick,
   deleting,
 }) {
@@ -69,11 +73,12 @@ export default function FolderWorkspace({
 
   const topicProps = {
     folderId,
-    directChildren,
     folderTasks,
     stats: folderStats,
-    childrenLoading,
+    refreshKey,
     onSelectChild,
+    onContentsChanged,
+    onError,
   };
 
   const optionsProps = {
@@ -93,6 +98,8 @@ export default function FolderWorkspace({
     onCreateTask,
     onRenameFolder,
     renaming,
+    onMoveFolder,
+    moving,
     onDeleteClick,
     deleting,
   };

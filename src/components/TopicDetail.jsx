@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getTopics } from '../api';
+import { getTopics, patchTopic } from '../api';
 import { FolderIcon, TaskIcon } from './sidebar/TreeIcons';
 import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
 
-// PAGE-SIZE: wire pagination here later (currently loads all items).
-const CONTENTS_PAGE_SIZE = null;
+const CONTENTS_PAGE_SIZE = 10;
 
 function statusLabel(status) {
   const normalized = (status || 'Pending').toLowerCase();
@@ -47,13 +46,13 @@ function formatShortDate(value) {
   }
 }
 
-function buildRootContentsList(directChildren) {
-  const folders = directChildren.filter((item) => item.type === 'topic');
-  const tasks = directChildren.filter((item) => item.type === 'task');
+function buildRootContentsList(items) {
+  const folders = items.filter((item) => item.type === 'topic');
+  const tasks = items.filter((item) => item.type === 'task');
   return [...folders, ...tasks];
 }
 
-function summaryLabel(items, stats) {
+function summaryLabel(items, totalCount, stats) {
   const folders = items.filter((item) => item.type === 'topic').length;
   const tasks = items.filter((item) => item.type === 'task').length;
   const parts = [];
@@ -62,35 +61,75 @@ function summaryLabel(items, stats) {
   if (tasks > 0) parts.push(`${tasks} task${tasks === 1 ? '' : 's'}`);
 
   const countLine = parts.length > 0 ? parts.join(' · ') : 'Empty';
+  const shownTotal = totalCount ?? items.length;
+  const countPrefix = shownTotal > items.length ? `${items.length} of ${shownTotal} shown · ` : '';
 
   const total = stats?.totalTasks ?? 0;
   const completed = stats?.completed ?? 0;
-  const progressLine =
-    total > 0 ? `${completed} of ${total} done` : null;
+  const progressLine = total > 0 ? `${completed} of ${total} done` : null;
 
-  return progressLine ? `${countLine} — ${progressLine}` : countLine;
+  const summaryCore = progressLine ? `${countLine} — ${progressLine}` : countLine;
+  return `${countPrefix}${summaryCore}`.replace(/^ · /, '');
 }
 
-function TaskRow({ item, onSelect }) {
+function ReorderButtons({ item, index, total, reorderingId, onReorder }) {
+  const busy = reorderingId === item.id;
+
+  return (
+    <span className="folder-contents-reorder">
+      <button
+        type="button"
+        className="folder-contents-reorder-btn"
+        aria-label={`Move ${item.name} up`}
+        disabled={busy || index === 0}
+        onClick={() => onReorder(item, 'up')}
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        className="folder-contents-reorder-btn"
+        aria-label={`Move ${item.name} down`}
+        disabled={busy || index === total - 1}
+        onClick={() => onReorder(item, 'down')}
+      >
+        ↓
+      </button>
+    </span>
+  );
+}
+
+function TaskRow({ item, onSelect, showReorder, index, total, reorderingId, onReorder }) {
   const hint = taskProgressHint(item);
 
   return (
     <li>
-      <button type="button" className="folder-contents-row folder-contents-row-task" onClick={() => onSelect?.(item)}>
-        <span className="folder-contents-icon" aria-hidden="true">
-          <TaskIcon status={item.status} />
-        </span>
-        <span className="folder-contents-body">
-          <span className="folder-contents-name">{item.name}</span>
-          {item.description && (
-            <span className="folder-contents-desc">{item.description}</span>
-          )}
-          {hint && <span className="folder-contents-meta">{hint}</span>}
-        </span>
-        <span className={`folder-contents-status ${statusClass(item.status)}`}>
-          {statusLabel(item.status)}
-        </span>
-      </button>
+      <div className="folder-contents-row folder-contents-row-task">
+        {showReorder && (
+          <ReorderButtons
+            item={item}
+            index={index}
+            total={total}
+            reorderingId={reorderingId}
+            onReorder={onReorder}
+          />
+        )}
+        <button type="button" className="folder-contents-row-main" onClick={() => onSelect?.(item)}>
+          <span className="folder-contents-icon" aria-hidden="true">
+            <TaskIcon status={item.status} />
+          </span>
+          <span className="folder-contents-body">
+            <span className="folder-contents-name">{item.name}</span>
+            {item.description && (
+              <span className="folder-contents-desc">{item.description}</span>
+            )}
+            {hint && <span className="folder-contents-meta">{hint}</span>}
+          </span>
+          <span className={`folder-contents-status ${statusClass(item.status)}`}>
+            {statusLabel(item.status)}
+          </span>
+        </button>
+      </div>
     </li>
   );
 }
@@ -107,10 +146,24 @@ function FolderRow({
   expandedIds,
   childrenCache,
   loadingIds,
+  showReorder,
+  index,
+  total,
+  reorderingId,
+  onReorder,
 }) {
   return (
     <li className="folder-contents-folder">
       <div className={`folder-contents-row folder-contents-row-folder${expanded ? ' is-expanded' : ''}`}>
+        {showReorder && (
+          <ReorderButtons
+            item={item}
+            index={index}
+            total={total}
+            reorderingId={reorderingId}
+            onReorder={onReorder}
+          />
+        )}
         <button
           type="button"
           className="folder-contents-expand"
@@ -171,9 +224,24 @@ function ContentsItem({
   childrenCache,
   loadingIds,
   onToggleExpand,
+  showReorder = false,
+  index = 0,
+  total = 1,
+  reorderingId,
+  onReorder,
 }) {
   if (item.type === 'task') {
-    return <TaskRow item={item} onSelect={onSelectChild} />;
+    return (
+      <TaskRow
+        item={item}
+        onSelect={onSelectChild}
+        showReorder={showReorder}
+        index={index}
+        total={total}
+        reorderingId={reorderingId}
+        onReorder={onReorder}
+      />
+    );
   }
 
   const expanded = expandedIds.has(item.id);
@@ -193,16 +261,22 @@ function ContentsItem({
       expandedIds={expandedIds}
       childrenCache={childrenCache}
       loadingIds={loadingIds}
+      showReorder={showReorder}
+      index={index}
+      total={total}
+      reorderingId={reorderingId}
+      onReorder={onReorder}
     />
   );
 }
 
 export default function TopicDetail({
   folderId,
-  directChildren = [],
   stats = null,
-  childrenLoading,
+  refreshKey,
   onSelectChild,
+  onContentsChanged,
+  onError,
   section = 'menu',
   open: openProp,
   onOpenChange,
@@ -211,11 +285,42 @@ export default function TopicDetail({
   const [expandedIds, setExpandedIds] = useState(() => new Set());
   const [childrenCache, setChildrenCache] = useState({});
   const [loadingIds, setLoadingIds] = useState(() => new Set());
+  const [rootItems, setRootItems] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [rootPage, setRootPage] = useState(1);
+  const [reorderingId, setReorderingId] = useState(null);
   const menuRef = useRef(null);
   const panelRef = useRef(null);
   const isMobileSheet = useIsMobileSheet();
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
+
+  const loadRootPage = useCallback(async (page, { append = false } = {}) => {
+    if (append) setLoadingMore(true);
+    else setListLoading(true);
+
+    try {
+      const data = await getTopics(folderId, { page, pageSize: CONTENTS_PAGE_SIZE });
+      const items = buildRootContentsList(data.items || []);
+      setRootItems((prev) => (append ? [...prev, ...items] : items));
+      setTotalCount(data.totalCount ?? items.length);
+      setHasMore(Boolean(data.hasMore));
+      setRootPage(page);
+    } catch (err) {
+      if (!append) {
+        setRootItems([]);
+        setTotalCount(0);
+        setHasMore(false);
+      }
+      onError?.(err.message);
+    } finally {
+      if (append) setLoadingMore(false);
+      else setListLoading(false);
+    }
+  }, [folderId, onError]);
 
   useEffect(() => {
     if (!isControlled) setInternalOpen(false);
@@ -225,7 +330,9 @@ export default function TopicDetail({
     setExpandedIds(new Set());
     setChildrenCache({});
     setLoadingIds(new Set());
-  }, [folderId]);
+    setRootPage(1);
+    loadRootPage(1);
+  }, [folderId, refreshKey, loadRootPage]);
 
   async function handleToggleExpand(id) {
     if (expandedIds.has(id)) {
@@ -254,6 +361,19 @@ export default function TopicDetail({
     }
 
     setExpandedIds((prev) => new Set(prev).add(id));
+  }
+
+  async function handleReorder(item, direction) {
+    setReorderingId(item.id);
+    try {
+      await patchTopic(item.id, { move: direction });
+      await loadRootPage(1);
+      onContentsChanged?.();
+    } catch (err) {
+      onError?.(err.message);
+    } finally {
+      setReorderingId(null);
+    }
   }
 
   useEffect(() => {
@@ -285,10 +405,7 @@ export default function TopicDetail({
   }
 
   const scrollPanelId = `folder-contents-scroll-${folderId}`;
-
-  const rootItems = buildRootContentsList(directChildren);
-  const visibleItems = CONTENTS_PAGE_SIZE ? rootItems.slice(0, CONTENTS_PAGE_SIZE) : rootItems;
-  const summary = summaryLabel(rootItems, stats);
+  const summary = summaryLabel(rootItems, totalCount, stats);
 
   const toggle = (
     <button
@@ -297,15 +414,15 @@ export default function TopicDetail({
       aria-expanded={open}
       aria-controls={scrollPanelId}
       onClick={() => setOpen((value) => !value)}
-      disabled={childrenLoading}
+      disabled={listLoading && rootItems.length === 0}
     >
       <span className="folder-contents-toggle-main">
         <span className="folder-contents-toggle-label">
-          Contents{rootItems.length > 0 ? ` (${rootItems.length})` : ''}
+          Contents{totalCount > 0 ? ` (${totalCount})` : ''}
         </span>
         <span className="folder-contents-chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
       </span>
-      <span className="folder-contents-summary">{childrenLoading ? 'Loading…' : summary}</span>
+      <span className="folder-contents-summary">{listLoading && rootItems.length === 0 ? 'Loading…' : summary}</span>
     </button>
   );
 
@@ -317,24 +434,41 @@ export default function TopicDetail({
       role="region"
       aria-label="Folder contents"
     >
-      {childrenLoading ? (
+      {listLoading && rootItems.length === 0 ? (
         <p className="folder-contents-muted">Loading…</p>
       ) : rootItems.length === 0 ? (
         <p className="folder-workspace-empty">Nothing in this folder yet.</p>
       ) : (
-        <ul className="folder-contents-list">
-          {visibleItems.map((item) => (
-            <ContentsItem
-              key={item.id}
-              item={item}
-              onSelectChild={onSelectChild}
-              expandedIds={expandedIds}
-              childrenCache={childrenCache}
-              loadingIds={loadingIds}
-              onToggleExpand={handleToggleExpand}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="folder-contents-list">
+            {rootItems.map((item, index) => (
+              <ContentsItem
+                key={item.id}
+                item={item}
+                onSelectChild={onSelectChild}
+                expandedIds={expandedIds}
+                childrenCache={childrenCache}
+                loadingIds={loadingIds}
+                onToggleExpand={handleToggleExpand}
+                showReorder
+                index={index}
+                total={rootItems.length}
+                reorderingId={reorderingId}
+                onReorder={handleReorder}
+              />
+            ))}
+          </ul>
+          {hasMore && (
+            <button
+              type="button"
+              className="folder-contents-more"
+              onClick={() => loadRootPage(rootPage + 1, { append: true })}
+              disabled={loadingMore}
+            >
+              {loadingMore ? 'Loading…' : 'Load more'}
+            </button>
+          )}
+        </>
       )}
     </div>
   ) : null;

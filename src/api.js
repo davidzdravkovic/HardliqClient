@@ -78,9 +78,13 @@ export function login(username, password) {
   );
 }
 
-export function getTopics(parentId) {
-  const query = parentId != null ? `?parentId=${parentId}` : '';
-  return request(`/topics${query}`);
+export function getTopics(parentId, { page = 1, pageSize = 20 } = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  if (parentId != null) params.set('parentId', String(parentId));
+  return request(`/topics?${params}`);
 }
 
 export function getFolderTasks(topicId) {
@@ -111,10 +115,17 @@ export function createTopic(name, parentId) {
   });
 }
 
-export function patchTopic(topicId, { name }) {
+export function patchTopic(topicId, { name, moveParent, parentId, move } = {}) {
+  const body = {};
+  if (name !== undefined) body.name = name;
+  if (moveParent) {
+    body.moveParent = true;
+    body.parentId = parentId ?? null;
+  }
+  if (move !== undefined) body.move = move;
   return request(`/topics/${topicId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(body),
   });
 }
 

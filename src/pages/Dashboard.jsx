@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [topicDeleting, setTopicDeleting] = useState(false);
   const [folderRenaming, setFolderRenaming] = useState(false);
+  const [folderMoving, setFolderMoving] = useState(false);
 
   /* MOBILE-V1 START — revert: remove this block and sidebar/backdrop JSX below */
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -230,6 +231,37 @@ export default function Dashboard() {
     }
   }
 
+  async function handleMoveFolder(parentId) {
+    if (!selected?.id || selected.type !== 'topic') return;
+
+    const oldParentId = selected.parentId ?? null;
+    setError('');
+    setFolderMoving(true);
+    try {
+      await patchTopic(selected.id, { moveParent: true, parentId });
+      setSelected(null);
+      refresh(oldParentId);
+      refresh(parentId ?? null);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setFolderMoving(false);
+    }
+  }
+
+  function handleContentsChanged() {
+    if (!selected?.id || selected.type !== 'topic') return;
+    refresh(selected.id);
+  }
+
+  function handleTaskMoved(newParentId) {
+    const oldParentId = selected?.parentId ?? null;
+    setSelected(null);
+    refresh(oldParentId);
+    refresh(newParentId ?? null);
+  }
+
   async function openTopicDeleteConfirm() {
     if (!selected?.id || selected.type !== 'topic') return;
 
@@ -359,7 +391,11 @@ export default function Dashboard() {
                 onCreateTask={handleCreateTask}
                 onRenameFolder={handleRenameFolder}
                 renaming={folderRenaming}
+                onMoveFolder={handleMoveFolder}
+                moving={folderMoving}
                 onSelectChild={selectItem}
+                onContentsChanged={handleContentsChanged}
+                onError={setError}
                 onDeleteClick={openTopicDeleteConfirm}
                 deleting={topicDeleting}
               />
@@ -368,6 +404,7 @@ export default function Dashboard() {
                 task={selected}
                 onTaskUpdated={handleTaskUpdated}
                 onTaskDeleted={handleTaskDeleted}
+                onTaskMoved={handleTaskMoved}
                 onError={setError}
               />
             )}

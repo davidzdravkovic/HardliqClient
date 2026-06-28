@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
+import MoveTargetPicker from './MoveTargetPicker';
 
 function MenuDotsIcon() {
   return (
@@ -29,6 +30,8 @@ export default function FolderOptions({
   onCreateTask,
   onRenameFolder,
   renaming,
+  onMoveFolder,
+  moving,
   onDeleteClick,
   deleting,
   section = 'menu',
@@ -105,6 +108,28 @@ export default function FolderOptions({
     setView('rename');
   }
 
+  function openMove() {
+    setView('move');
+  }
+
+  async function handleMoveToFolder(folder) {
+    try {
+      await onMoveFolder?.(folder.id);
+      setOpen(false);
+    } catch {
+      // error shown by parent
+    }
+  }
+
+  async function handleMoveToRoot() {
+    try {
+      await onMoveFolder?.(null);
+      setOpen(false);
+    } catch {
+      // error shown by parent
+    }
+  }
+
   async function handleRenameSubmit(e) {
     e.preventDefault();
     const trimmed = renameName.trim();
@@ -154,6 +179,11 @@ export default function FolderOptions({
       <li role="none">
         <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openRename}>
           Rename folder
+        </button>
+      </li>
+      <li role="none">
+        <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openMove}>
+          Move folder
         </button>
       </li>
       <li className="folder-options-menu-divider" role="separator" aria-hidden="true" />
@@ -239,6 +269,17 @@ export default function FolderOptions({
     </div>
   );
 
+  const moveForm = (
+    <MoveTargetPicker
+      title="Move folder"
+      excludeId={folderId}
+      loading={moving}
+      onSelectFolder={handleMoveToFolder}
+      onMoveToRoot={handleMoveToRoot}
+      onCancel={() => setView('menu')}
+    />
+  );
+
   const panel = open ? (
     <div
       ref={panelRef}
@@ -248,6 +289,7 @@ export default function FolderOptions({
       {view === 'topic' && topicForm}
       {view === 'task' && taskForm}
       {view === 'rename' && renameForm}
+      {view === 'move' && moveForm}
     </div>
   ) : null;
 
