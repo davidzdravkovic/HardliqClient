@@ -275,6 +275,17 @@
     font-size: 0.9375rem;
   }
 
+  .task-workspace .task-meta-panel {
+    min-height: 0;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .task-meta-badge {
+    flex-direction: row;
+    justify-content: center;
+    padding: 0.75rem 0.85rem;
+  }
+
   .folder-workspace-header {
     order: 0;
     grid-column: auto;
@@ -432,13 +443,23 @@
 
   .folder-options-panel.folder-mobile-sheet {
     padding: 0.45rem;
+    width: auto !important;
+    max-width: min(20rem, calc(100vw - 1rem)) !important;
   }
 
-  .folder-options-menu-item {
-    min-height: 3rem;
-    padding: 0.75rem 0.9rem;
-    font-size: 1rem;
-    -webkit-tap-highlight-color: transparent;
+  .folder-options-panel-menu.folder-mobile-sheet {
+    width: min(18rem, calc(100vw - 1rem)) !important;
+  }
+
+  .folder-options-tile {
+    min-height: 3.5rem;
+    font-size: 0.75rem;
+  }
+
+  .folder-options-chip {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
   }
 
   .folder-options-form {

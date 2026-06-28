@@ -26,6 +26,7 @@ export default function SideBar({ selectedId, onSelect, refreshEvent, onNewTopic
       <div className="sidebar-section sidebar-section-topics">
         <p className="sidebar-title">Topics</p>
         <TopicTree
+          key={refreshEvent?.treeVersion ?? 0}
           selectedId={selectedId}
           onSelect={onSelect}
           refreshEvent={refreshEvent}
