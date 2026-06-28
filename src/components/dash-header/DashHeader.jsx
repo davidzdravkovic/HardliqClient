@@ -8,6 +8,8 @@ export default function DashHeader({
   onSearchSelect,
   onLogout,
   onMenuClick, /* MOBILE-V1 */
+  searchInputRef,
+  registerEscape,
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -15,6 +17,14 @@ export default function DashHeader({
   useEffect(() => {
     setOpen(Boolean(search.trim()));
   }, [search]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    return registerEscape?.(() => {
+      setOpen(false);
+      return true;
+    });
+  }, [open, registerEscape]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -70,17 +80,22 @@ export default function DashHeader({
             </svg>
           </span>
           <input
+            ref={searchInputRef}
             type="search"
             className="dash-search"
-            placeholder="Search…"
+            placeholder="Search topics or tasks…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={() => search.trim() && setOpen(true)}
             aria-label="Search topics or tasks"
             aria-expanded={open}
             aria-controls="dash-search-results"
+            aria-keyshortcuts="/ Control+k"
             autoComplete="off"
           />
+          <span className="dash-search-kbd" aria-hidden="true">
+            <kbd>/</kbd>
+          </span>
         </div>
 
         {open && (

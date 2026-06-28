@@ -9,6 +9,9 @@ import WorkspaceStats from '../components/WorkspaceStats';
 import CreateTopicCard from '../components/CreateTopicCard';
 import RecentTopics from '../components/RecentTopics';
 import ConfirmDialog from '../components/ConfirmDialog';
+import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp';
+import useEscapeStack from '../hooks/useEscapeStack';
+import { isEditableTarget, isQuestionMarkKey } from '../utils/keyboard';
 import {
   clearAuth,
   createTask,
@@ -25,11 +28,14 @@ import { formatDeleteTopicMessage } from '../utils/deleteMessages';
 export default function Dashboard() {
   const navigate = useNavigate();
   const createTopicRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const { registerEscape, runEscape } = useEscapeStack();
 
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
   const [refreshEvent, setRefreshEvent] = useState(null);
   const [error, setError] = useState('');
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const [childType, setChildType] = useState(null);
   const [directChildren, setDirectChildren] = useState([]);
@@ -145,6 +151,65 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, [selected?.id, isTopicSelected, refreshEvent?.id]);
+
+  useEffect(() => {
+    function onKeyDown(event) {
+      const typing = isEditableTarget(event.target);
+
+      if ((event.key === '/' || (event.ctrlKey && event.key.toLowerCase() === 'k')) && !typing) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      if (isQuestionMarkKey(event) && !typing) {
+        event.preventDefault();
+        setHelpOpen((open) => !open);
+        return;
+      }
+
+      if (event.key !== 'Escape') return;
+
+      if (helpOpen) {
+        event.preventDefault();
+        setHelpOpen(false);
+        return;
+      }
+
+      if (deleteConfirm && !topicDeleting && !deleteConfirm.summaryLoading) {
+        event.preventDefault();
+        setDeleteConfirm(null);
+        return;
+      }
+
+      if (runEscape()) {
+        event.preventDefault();
+        return;
+      }
+
+      if (sidebarOpen) {
+        event.preventDefault();
+        closeSidebar();
+        return;
+      }
+
+      if (search.trim()) {
+        event.preventDefault();
+        setSearch('');
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [
+    helpOpen,
+    deleteConfirm,
+    topicDeleting,
+    runEscape,
+    sidebarOpen,
+    search,
+  ]);
 
   function refresh(parentIds, { deletedTopicId, movedTopicId, resetTree = false } = {}) {
     const list = Array.isArray(parentIds) ? parentIds : [parentIds];
@@ -364,6 +429,8 @@ export default function Dashboard() {
             onSearchSelect={handleSearchSelect}
             onLogout={logout}
             onMenuClick={() => setSidebarOpen(true)} /* MOBILE-V1 */
+            searchInputRef={searchInputRef}
+            registerEscape={registerEscape}
           />
 
           <main className="main-content">
@@ -414,6 +481,7 @@ export default function Dashboard() {
                 onError={setError}
                 onDeleteClick={openTopicDeleteConfirm}
                 deleting={topicDeleting}
+                registerEscape={registerEscape}
               />
             ) : (
               <TaskDetail
@@ -422,6 +490,7 @@ export default function Dashboard() {
                 onTaskDeleted={handleTaskDeleted}
                 onTaskMoved={handleTaskMoved}
                 onError={setError}
+                registerEscape={registerEscape}
               />
             )}
           </main>
@@ -440,6 +509,8 @@ export default function Dashboard() {
         onConfirm={handleConfirmTopicDelete}
         onCancel={() => !topicDeleting && !deleteConfirm?.summaryLoading && setDeleteConfirm(null)}
       />
+
+      <KeyboardShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

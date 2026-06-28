@@ -31,6 +31,7 @@ export default function FolderWorkspace({
   onError,
   onDeleteClick,
   deleting,
+  registerEscape,
 }) {
   const [contentsOpen, setContentsOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -53,6 +54,14 @@ export default function FolderWorkspace({
       document.body.style.overflow = prevOverflow;
     };
   }, [contentsOpen, optionsOpen]);
+
+  useEffect(() => {
+    if (!optionsOpen) return undefined;
+    return registerEscape?.(() => {
+      setOptionsOpen(false);
+      return true;
+    });
+  }, [optionsOpen, registerEscape]);
 
   function closeMenus() {
     setContentsOpen(false);
@@ -132,6 +141,7 @@ export default function FolderWorkspace({
           section="menu"
           open={contentsOpen}
           onOpenChange={handleContentsOpen}
+          registerEscape={registerEscape}
         />
       </div>
     </WorkspaceStats>

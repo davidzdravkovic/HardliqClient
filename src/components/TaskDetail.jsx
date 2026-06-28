@@ -39,7 +39,7 @@ function mergeTaskDates(task, patch = {}) {
   };
 }
 
-export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskMoved, onError }) {
+export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskMoved, onError, registerEscape }) {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -76,6 +76,21 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
       cancelled = true;
     };
   }, [task.id, task.parentId, dates.createdAt]);
+
+  useEffect(() => {
+    if (!optionsOpen && !deleteOpen) return undefined;
+    return registerEscape?.(() => {
+      if (deleteOpen && !saving) {
+        setDeleteOpen(false);
+        return true;
+      }
+      if (optionsOpen && !saving) {
+        setOptionsOpen(false);
+        return true;
+      }
+      return false;
+    });
+  }, [optionsOpen, deleteOpen, saving, registerEscape]);
 
   useEffect(() => {
     if (!optionsOpen) return undefined;

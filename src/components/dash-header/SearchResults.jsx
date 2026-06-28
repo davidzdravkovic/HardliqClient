@@ -1,4 +1,7 @@
 import useTopicSearch from './useTopicSearch';
+import PaginationFooter from '../PaginationFooter';
+
+const SEARCH_PAGE_SIZE = 20;
 
 function formatPath(path) {
   if (!path?.length) return 'All topics';
@@ -29,9 +32,6 @@ export default function SearchResults({ query, onSelect, onClose }) {
 
       {items.length > 0 && (
         <>
-          <p className="dash-search-meta">
-            {totalCount} result{totalCount === 1 ? '' : 's'}
-          </p>
           <ul className="dash-search-list">
             {items.map((item) => (
               <li key={`${item.type}-${item.id}`}>
@@ -58,18 +58,16 @@ export default function SearchResults({ query, onSelect, onClose }) {
               </li>
             ))}
           </ul>
+          <PaginationFooter
+            className="pagination-footer-search"
+            shown={items.length}
+            total={totalCount}
+            pageSize={SEARCH_PAGE_SIZE}
+            loading={loading && items.length > 0}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+          />
         </>
-      )}
-
-      {isActive && hasMore && (
-        <button
-          type="button"
-          className="dash-search-more"
-          onClick={loadMore}
-          disabled={loading}
-        >
-          {loading ? 'Loading…' : 'Load more'}
-        </button>
       )}
     </div>
   );

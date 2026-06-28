@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { getTopics, patchTopic } from '../api';
 import { FolderIcon, TaskIcon } from './sidebar/TreeIcons';
 import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
+import PaginationFooter from './PaginationFooter';
 
 const CONTENTS_PAGE_SIZE = 10;
 
@@ -99,12 +100,12 @@ function ReorderButtons({ item, index, total, reorderingId, onReorder }) {
   );
 }
 
-function TaskRow({ item, onSelect, showReorder, index, total, reorderingId, onReorder }) {
+function TaskRow({ item, onSelect, showReorder, index, total, reorderingId, onReorder, isFocused, rowRef }) {
   const hint = taskProgressHint(item);
 
   return (
-    <li>
-      <div className="folder-contents-row folder-contents-row-task">
+    <li ref={rowRef}>
+      <div className={`folder-contents-row folder-contents-row-task${isFocused ? ' is-focused' : ''}`}>
         {showReorder && (
           <ReorderButtons
             item={item}
@@ -151,10 +152,12 @@ function FolderRow({
   total,
   reorderingId,
   onReorder,
+  isFocused,
+  rowRef,
 }) {
   return (
-    <li className="folder-contents-folder">
-      <div className={`folder-contents-row folder-contents-row-folder${expanded ? ' is-expanded' : ''}`}>
+    <li className="folder-contents-folder" ref={rowRef}>
+      <div className={`folder-contents-row folder-contents-row-folder${expanded ? ' is-expanded' : ''}${isFocused ? ' is-focused' : ''}`}>
         {showReorder && (
           <ReorderButtons
             item={item}
@@ -229,6 +232,8 @@ function ContentsItem({
   total = 1,
   reorderingId,
   onReorder,
+  isFocused = false,
+  rowRef,
 }) {
   if (item.type === 'task') {
     return (
@@ -240,6 +245,8 @@ function ContentsItem({
         total={total}
         reorderingId={reorderingId}
         onReorder={onReorder}
+        isFocused={isFocused}
+        rowRef={rowRef}
       />
     );
   }
@@ -266,6 +273,8 @@ function ContentsItem({
       total={total}
       reorderingId={reorderingId}
       onReorder={onReorder}
+      isFocused={isFocused}
+      rowRef={rowRef}
     />
   );
 }
@@ -280,6 +289,7 @@ export default function TopicDetail({
   section = 'menu',
   open: openProp,
   onOpenChange,
+  registerEscape,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState(() => new Set());
@@ -292,8 +302,10 @@ export default function TopicDetail({
   const [loadingMore, setLoadingMore] = useState(false);
   const [rootPage, setRootPage] = useState(1);
   const [reorderingId, setReorderingId] = useState(null);
+  const [focusedIndex, setFocusedIndex] = useState(0);
   const menuRef = useRef(null);
   const panelRef = useRef(null);
+  const rowRefs = useRef([]);
   const isMobileSheet = useIsMobileSheet();
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
@@ -369,10 +381,73 @@ export default function TopicDetail({
       await patchTopic(item.id, { move: direction });
       await loadRootPage(1);
       onContentsChanged?.();
+      setFocusedIndex((prev) => {
+        if (direction === 'up') return Math.max(0, prev - 1);
+        return Math.min(rootItems.length - 1, prev + 1);
+      });
     } catch (err) {
       onError?.(err.message);
     } finally {
       setReorderingId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!open) {
+      setFocusedIndex(0);
+      return undefined;
+    }
+
+    panelRef.current?.focus({ preventScroll: true });
+    return registerEscape?.(() => {
+      setOpen(false);
+      return true;
+    });
+  }, [open, registerEscape]);
+
+  useEffect(() => {
+    if (focusedIndex >= rootItems.length) {
+      setFocusedIndex(Math.max(0, rootItems.length - 1));
+    }
+  }, [rootItems.length, focusedIndex]);
+
+  useEffect(() => {
+    rowRefs.current[focusedIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [focusedIndex]);
+
+  function handlePanelKeyDown(event) {
+    if (!rootItems.length) return;
+
+    const item = rootItems[focusedIndex];
+    if (!item) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setFocusedIndex((prev) => Math.min(prev + 1, rootItems.length - 1));
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setFocusedIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+
+    if (event.ctrlKey && event.key === 'ArrowDown' && focusedIndex < rootItems.length - 1) {
+      event.preventDefault();
+      handleReorder(item, 'down');
+      return;
+    }
+
+    if (event.ctrlKey && event.key === 'ArrowUp' && focusedIndex > 0) {
+      event.preventDefault();
+      handleReorder(item, 'up');
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      onSelectChild?.(item);
     }
   }
 
@@ -386,15 +461,9 @@ export default function TopicDetail({
       setOpen(false);
     }
 
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-
     document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [open]);
 
@@ -433,6 +502,8 @@ export default function TopicDetail({
       className={`folder-contents-panel${isMobileSheet ? ' folder-mobile-sheet' : ''}`}
       role="region"
       aria-label="Folder contents"
+      tabIndex={-1}
+      onKeyDown={handlePanelKeyDown}
     >
       {listLoading && rootItems.length === 0 ? (
         <p className="folder-contents-muted">Loading…</p>
@@ -440,6 +511,9 @@ export default function TopicDetail({
         <p className="folder-workspace-empty">Nothing in this folder yet.</p>
       ) : (
         <>
+          <p className="folder-contents-kbd-hint">
+            <kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Ctrl</kbd><kbd>↑</kbd><kbd>↓</kbd> reorder
+          </p>
           <ul className="folder-contents-list">
             {rootItems.map((item, index) => (
               <ContentsItem
@@ -455,19 +529,21 @@ export default function TopicDetail({
                 total={rootItems.length}
                 reorderingId={reorderingId}
                 onReorder={handleReorder}
+                isFocused={focusedIndex === index}
+                rowRef={(el) => {
+                  rowRefs.current[index] = el;
+                }}
               />
             ))}
           </ul>
-          {hasMore && (
-            <button
-              type="button"
-              className="folder-contents-more"
-              onClick={() => loadRootPage(rootPage + 1, { append: true })}
-              disabled={loadingMore}
-            >
-              {loadingMore ? 'Loading…' : 'Load more'}
-            </button>
-          )}
+          <PaginationFooter
+            shown={rootItems.length}
+            total={totalCount}
+            pageSize={CONTENTS_PAGE_SIZE}
+            loading={loadingMore}
+            hasMore={hasMore}
+            onLoadMore={() => loadRootPage(rootPage + 1, { append: true })}
+          />
         </>
       )}
     </div>
