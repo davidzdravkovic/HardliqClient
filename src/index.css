@@ -1809,10 +1809,48 @@ textarea {
   margin-top: 0.15rem;
   padding-top: 0.45rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+}
+
+.folder-options-grid-danger {
+  gap: 0.35rem;
+}
+
+.folder-options-tile-danger {
+  color: #e89292;
+  border-color: rgba(224, 102, 102, 0.18);
+  background: rgba(224, 102, 102, 0.04);
+}
+
+.folder-options-tile-danger:hover:not(:disabled) {
+  color: #f0a8a8;
+  border-color: rgba(224, 102, 102, 0.32);
+  background: rgba(224, 102, 102, 0.1);
+}
+
+.folder-options-tile-danger-strong {
+  color: var(--danger);
+  border-color: rgba(224, 102, 102, 0.28);
+  background: rgba(224, 102, 102, 0.07);
+}
+
+.folder-options-tile-danger-strong:hover:not(:disabled) {
+  color: #ffbcbc;
+  border-color: rgba(224, 102, 102, 0.45);
+  background: rgba(224, 102, 102, 0.14);
+}
+
+.folder-options-tile-hint {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+  line-height: 1.2;
+}
+
+.folder-options-tile:disabled,
+.folder-options-tile-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .folder-options-danger-link {
@@ -3463,28 +3501,79 @@ textarea {
 
 .tree-row {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.55rem 0.75rem;
-  border: none;
+  align-items: stretch;
+  gap: 0.1rem;
+  min-height: 2rem;
   border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.12s;
 }
 
-.tree-row:hover {
+.tree-row:has(.tree-twistie:hover),
+.tree-row:has(.tree-row-main:hover) {
   background: var(--bg-raised);
-  color: var(--text);
 }
 
 .tree-row.selected {
   background: var(--primary-muted);
-  color: var(--text);
   box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.tree-row.selected .tree-row-main {
+  color: var(--text);
+}
+
+.tree-twistie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.35rem;
+  margin: 0.2rem 0;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.tree-twistie:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.tree-twistie-icon {
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+.tree-twistie-spacer {
+  pointer-events: none;
+}
+
+.tree-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.55rem 0.45rem 0.15rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.12s;
+}
+
+.tree-row-main:hover {
+  color: var(--text);
+}
+
+.tree-row.selected .tree-row-main {
+  color: var(--text);
 }
 
 .tree-chevron {

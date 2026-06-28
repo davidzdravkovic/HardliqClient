@@ -11,6 +11,7 @@ export default function MoveTargetPicker({
   excludeId,
   onSelectFolder,
   onMoveToRoot,
+  moveToRootLabel = 'Make root topic',
   onCancel,
   loading = false,
   compact = false,
@@ -68,7 +69,7 @@ export default function MoveTargetPicker({
           onClick={onMoveToRoot}
           disabled={loading}
         >
-          Move to top level
+          {moveToRootLabel}
         </button>
       )}
       <input

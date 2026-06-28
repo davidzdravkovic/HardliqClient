@@ -12,42 +12,57 @@ function TreeNode({
   depth,
   selectedId,
   onSelect,
-  onToggle,
+  onExpandToggle,
   expanded,
   children,
   loading,
-  refreshEvent,
   parentFolderId,
+  refreshEvent,
 }) {
   const isTask = node.type === 'task';
   const isSelected = selectedId === node.id;
 
+  function handleOpen() {
+    onSelect({
+      ...node,
+      parentId: node.parentId ?? parentFolderId ?? null,
+    });
+  }
+
   return (
     <div className="tree-node">
-      <button
-        type="button"
-        className={`tree-row ${isSelected ? 'selected' : ''}`}
-        style={{ paddingLeft: `${0.5 + depth * 0.85}rem` }}
-        onClick={() => {
-          if (isTask) {
-            onSelect({
-              ...node,
-              parentId: node.parentId ?? parentFolderId ?? null,
-            });
-          } else {
-            onToggle(node);
-          }
-        }}
+      <div
+        className={`tree-row${isSelected ? ' selected' : ''}`}
+        style={{ paddingLeft: `${0.35 + depth * 0.85}rem` }}
       >
-        {!isTask && (
-          <span className="tree-chevron">{loading ? '…' : expanded ? '▾' : '▸'}</span>
+        {!isTask ? (
+          <button
+            type="button"
+            className="tree-twistie"
+            aria-expanded={expanded}
+            aria-label={expanded ? `Collapse ${node.name}` : `Expand ${node.name}`}
+            onClick={onExpandToggle}
+          >
+            <span className="tree-twistie-icon" aria-hidden="true">
+              {loading ? '…' : expanded ? '▾' : '▸'}
+            </span>
+          </button>
+        ) : (
+          <span className="tree-twistie tree-twistie-spacer" aria-hidden="true" />
         )}
-        {isTask && <span className="tree-chevron tree-chevron-spacer" />}
-        <span className="tree-icon">
-          {isTask ? <TaskIcon status={node.status} /> : <FolderIcon open={expanded} />}
-        </span>
-        <span className="tree-label">{node.name}</span>
-      </button>
+
+        <button
+          type="button"
+          className="tree-row-main"
+          aria-current={isSelected ? 'page' : undefined}
+          onClick={handleOpen}
+        >
+          <span className="tree-icon">
+            {isTask ? <TaskIcon status={node.status} /> : <FolderIcon open={expanded} />}
+          </span>
+          <span className="tree-label">{node.name}</span>
+        </button>
+      </div>
 
       {!isTask && expanded && children && (
         <div className="tree-children">
@@ -101,32 +116,18 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
     }
   }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId, node.id, loadChildren]);
 
-  async function handleToggle(node) {
-    if (selectedId === node.id) {
-      if (expanded) {
-        setExpanded(false);
-        return;
-      }
-      if (children === null) {
-        const requestId = Date.now();
-        fetchIdRef.current = requestId;
-        await loadChildren(requestId);
-      }
-      setExpanded(true);
+  async function handleExpandToggle() {
+    if (expanded) {
+      setExpanded(false);
       return;
     }
 
-    onSelect(node);
-    if (!expanded) {
-      if (children === null) {
-        const requestId = Date.now();
-        fetchIdRef.current = requestId;
-        await loadChildren(requestId);
-      }
-      setExpanded(true);
-    } else {
-      setExpanded(false);
+    if (children === null) {
+      const requestId = Date.now();
+      fetchIdRef.current = requestId;
+      await loadChildren(requestId);
     }
+    setExpanded(true);
   }
 
   return (
@@ -135,12 +136,12 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
       depth={depth}
       selectedId={selectedId}
       onSelect={onSelect}
-      onToggle={handleToggle}
+      onExpandToggle={handleExpandToggle}
       expanded={expanded}
       children={children}
       loading={loading}
-      refreshEvent={refreshEvent}
       parentFolderId={parentFolderId}
+      refreshEvent={refreshEvent}
     />
   );
 }

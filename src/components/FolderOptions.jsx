@@ -43,6 +43,21 @@ function MenuIcon({ type }) {
       </svg>
     );
   }
+  if (type === 'empty') {
+    return (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M3 5.5h10M5.5 5.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M6 8v3.5M10 8v3.5M4.5 5.5 5 13h6l.5-7.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (type === 'delete') {
+    return (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M3.5 4.5h9M6 4.5V3.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M6.5 7v4.5M9.5 7v4.5M5 4.5l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9l.5-8" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
       <path d="M3.5 4h9M5.5 8h5M7.5 12h1" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
@@ -258,24 +273,31 @@ export default function FolderOptions({
       </div>
 
       <div className="folder-options-section folder-options-section-danger">
-        <button
-          type="button"
-          className="folder-options-danger-link"
-          role="menuitem"
-          onClick={onEmptyClick}
-          disabled={deleting || emptying}
-        >
-          Empty folder
-        </button>
-        <button
-          type="button"
-          className="folder-options-danger-link"
-          role="menuitem"
-          onClick={onDeleteClick}
-          disabled={deleting || emptying}
-        >
-          Delete folder
-        </button>
+        <p className="folder-options-section-label">Remove</p>
+        <div className="folder-options-grid folder-options-grid-danger">
+          <button
+            type="button"
+            className="folder-options-tile folder-options-tile-danger"
+            role="menuitem"
+            onClick={onEmptyClick}
+            disabled={deleting || emptying}
+          >
+            <MenuIcon type="empty" />
+            <span>Empty</span>
+            <span className="folder-options-tile-hint">Keep folder</span>
+          </button>
+          <button
+            type="button"
+            className="folder-options-tile folder-options-tile-danger folder-options-tile-danger-strong"
+            role="menuitem"
+            onClick={onDeleteClick}
+            disabled={deleting || emptying}
+          >
+            <MenuIcon type="delete" />
+            <span>Delete</span>
+            <span className="folder-options-tile-hint">Remove all</span>
+          </button>
+        </div>
       </div>
     </div>
   );
