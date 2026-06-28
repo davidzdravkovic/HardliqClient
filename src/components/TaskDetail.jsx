@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { deleteTask, patchTask, patchTopic } from '../api';
+import { deleteTask, getTopics, patchTask, patchTopic } from '../api';
 import { formatDeleteTaskMessage } from '../utils/deleteMessages';
+import { buildTaskTimeline } from '../utils/taskDates';
 import ConfirmDialog from './ConfirmDialog';
 import TaskOptions from './TaskOptions';
 
@@ -8,7 +9,7 @@ function TaskStatusIcon({ status }) {
   const normalized = (status || 'Pending').toLowerCase();
   if (normalized === 'completed') {
     return (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
         <path d="m8 12 2.5 2.5 5.5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -16,40 +17,65 @@ function TaskStatusIcon({ status }) {
   }
   if (normalized === 'canceled') {
     return (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" aria-hidden="true">
         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
         <path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     );
   }
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
       <path d="M12 8v4.5l2.5 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
 
-function previewText(text, max = 120) {
-  if (!text) return 'Task details and actions';
-  const trimmed = text.trim();
-  if (trimmed.length <= max) return trimmed;
-  return `${trimmed.slice(0, max).trim()}…`;
+function mergeTaskDates(task, patch = {}) {
+  return {
+    createdAt: patch.createdAt ?? task.createdAt,
+    completedAt: patch.completedAt ?? task.completedAt,
+    canceledAt: patch.canceledAt ?? task.canceledAt,
+  };
 }
 
 export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskMoved, onError }) {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dates, setDates] = useState(() => mergeTaskDates(task));
 
   const taskStatus = task.status || 'Pending';
   const canUpdateStatus = taskStatus === 'Pending';
-  const statusClass = `status status-${taskStatus.toLowerCase()}`;
+  const timeline = buildTaskTimeline({ ...dates, status: taskStatus });
 
   useEffect(() => {
     setOptionsOpen(false);
     setDeleteOpen(false);
-  }, [task.id]);
+    setDates(mergeTaskDates(task));
+  }, [task.id, task.createdAt, task.completedAt, task.canceledAt]);
+
+  useEffect(() => {
+    if (dates.createdAt || task.parentId == null) return undefined;
+
+    let cancelled = false;
+    getTopics(task.parentId)
+      .then((data) => {
+        if (cancelled) return;
+        const match = (data.items || []).find((item) => item.id === task.id);
+        if (!match?.createdAt) return;
+        setDates({
+          createdAt: match.createdAt,
+          completedAt: match.completedAt,
+          canceledAt: match.canceledAt,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [task.id, task.parentId, dates.createdAt]);
 
   useEffect(() => {
     if (!optionsOpen) return undefined;
@@ -64,11 +90,18 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
     };
   }, [optionsOpen]);
 
+  function publishTaskPatch(patch) {
+    onTaskUpdated?.(patch);
+    if (patch.createdAt || patch.completedAt || patch.canceledAt) {
+      setDates((prev) => mergeTaskDates(prev, patch));
+    }
+  }
+
   async function handleRename(name) {
     setSaving(true);
     try {
       const updated = await patchTopic(task.id, { name });
-      onTaskUpdated?.({ name: updated.name });
+      publishTaskPatch({ name: updated.name });
     } catch (err) {
       onError?.(err.message);
       throw err;
@@ -81,7 +114,13 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
     setSaving(true);
     try {
       const updated = await patchTask(task.id, { description });
-      onTaskUpdated?.({ description: updated.description, status: updated.status });
+      publishTaskPatch({
+        description: updated.description,
+        status: updated.status,
+        createdAt: updated.createdAt,
+        completedAt: updated.completedAt,
+        canceledAt: updated.canceledAt,
+      });
     } catch (err) {
       onError?.(err.message);
       throw err;
@@ -94,7 +133,13 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
     setSaving(true);
     try {
       const updated = await patchTask(task.id, { status });
-      onTaskUpdated?.({ description: updated.description, status: updated.status });
+      publishTaskPatch({
+        description: updated.description,
+        status: updated.status,
+        createdAt: updated.createdAt,
+        completedAt: updated.completedAt,
+        canceledAt: updated.canceledAt,
+      });
     } catch (err) {
       onError?.(err.message);
       throw err;
@@ -143,23 +188,32 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
 
       <div className="folder-workspace-layout task-workspace-layout">
         <section className="folder-workspace task-workspace">
-          <aside className="folder-stats-panel task-meta-panel" aria-label="Task status">
+          <aside className="folder-stats-panel task-meta-panel" aria-label="Task timeline">
             <div className={`task-meta-badge task-meta-${taskStatus.toLowerCase()}`}>
               <span className="task-meta-icon">
                 <TaskStatusIcon status={taskStatus} />
               </span>
               <span className="task-meta-status-text">{taskStatus}</span>
             </div>
-            <p className="task-meta-caption">Current status</p>
+
+            {timeline.length > 0 ? (
+              <dl className="task-timeline">
+                {timeline.map((entry) => (
+                  <div key={entry.key} className="task-timeline-row">
+                    <dt>{entry.label}</dt>
+                    <dd>{entry.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="task-meta-caption">Timeline unavailable</p>
+            )}
           </aside>
 
           <header className="folder-workspace-header">
             <div className="folder-workspace-hero">
-              <div className="task-workspace-title-row">
-                <h2 className="folder-workspace-title">{task.name}</h2>
-                <span className={statusClass}>{taskStatus}</span>
-              </div>
-              <p className="folder-workspace-subtitle">{previewText(task.description)}</p>
+              <h2 className="folder-workspace-title">{task.name}</h2>
+              <p className="folder-workspace-subtitle">Task workspace</p>
             </div>
             <div className="folder-workspace-header-actions">
               <TaskOptions
@@ -181,12 +235,12 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
           </header>
 
           <div className="folder-workspace-controls task-workspace-content">
-            <div className="task-workspace-description">
+            <section className="task-workspace-description">
               <p className="task-workspace-label">Description</p>
               <div className="task-workspace-desc-body">
                 {task.description?.trim() ? task.description : 'No description yet.'}
               </div>
-            </div>
+            </section>
           </div>
         </section>
       </div>

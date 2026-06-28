@@ -64,6 +64,9 @@ export default function Dashboard() {
         parentId: item.parentId ?? null,
         description: item.description ?? undefined,
         status: item.status ?? undefined,
+        createdAt: item.createdAt ?? undefined,
+        completedAt: item.completedAt ?? undefined,
+        canceledAt: item.canceledAt ?? undefined,
       });
     }
     closeSidebar();
@@ -178,6 +181,9 @@ export default function Dashboard() {
       parentId: item.parentId ?? null,
       description: item.description ?? undefined,
       status: item.status ?? undefined,
+      createdAt: item.createdAt ?? undefined,
+      completedAt: item.completedAt ?? undefined,
+      canceledAt: item.canceledAt ?? undefined,
     });
     closeSidebar(); /* MOBILE-V1 */
   }
