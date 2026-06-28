@@ -26,11 +26,14 @@ export default function FolderWorkspace({
   renaming,
   onMoveFolder,
   moving,
+  folderParentId = null,
   onSelectChild,
   onContentsChanged,
   onError,
   onDeleteClick,
   deleting,
+  onEmptyClick,
+  emptying,
   registerEscape,
 }) {
   const [contentsOpen, setContentsOpen] = useState(false);
@@ -109,8 +112,11 @@ export default function FolderWorkspace({
     renaming,
     onMoveFolder,
     moving,
+    folderParentId,
     onDeleteClick,
     deleting,
+    onEmptyClick,
+    emptying,
   };
 
   return (

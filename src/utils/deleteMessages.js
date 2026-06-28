@@ -17,3 +17,19 @@ export function formatDeleteTopicMessage(name, summary) {
 export function formatDeleteTaskMessage(name) {
   return `Delete "${name}"? This can't be undone.`;
 }
+
+export function formatEmptyFolderMessage(name, summary) {
+  if (!summary || summary.totalCount === 0) {
+    return `Empty "${name}"? This folder has nothing inside.`;
+  }
+
+  const parts = [];
+  if (summary.folderCount > 0) {
+    parts.push(`${summary.folderCount} folder${summary.folderCount === 1 ? '' : 's'}`);
+  }
+  if (summary.taskCount > 0) {
+    parts.push(`${summary.taskCount} task${summary.taskCount === 1 ? '' : 's'}`);
+  }
+
+  return `Empty "${name}"? This will permanently delete everything inside (${parts.join(', ')}). The folder itself will be kept.`;
+}

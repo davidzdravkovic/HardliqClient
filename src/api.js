@@ -161,3 +161,9 @@ export function deleteTopic(topicId) {
     method: 'DELETE',
   });
 }
+
+export function emptyTopicChildren(topicId) {
+  return request(`/topics/${topicId}/children`, {
+    method: 'DELETE',
+  });
+}

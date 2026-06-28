@@ -17,13 +17,14 @@ import {
   createTask,
   createTopic,
   deleteTopic,
+  emptyTopicChildren,
   getTopicDeleteSummary,
   getTopics,
   getFolderTasks,
   getTaskStats,
   patchTopic,
 } from '../api';
-import { formatDeleteTopicMessage } from '../utils/deleteMessages';
+import { formatDeleteTopicMessage, formatEmptyFolderMessage } from '../utils/deleteMessages';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -48,7 +49,9 @@ export default function Dashboard() {
   const [taskName, setTaskName] = useState('');
   const [taskDesc, setTaskDesc] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [emptyConfirm, setEmptyConfirm] = useState(null);
   const [topicDeleting, setTopicDeleting] = useState(false);
+  const [folderEmptying, setFolderEmptying] = useState(false);
   const [folderRenaming, setFolderRenaming] = useState(false);
   const [folderMoving, setFolderMoving] = useState(false);
 
@@ -88,6 +91,7 @@ export default function Dashboard() {
     setTaskName('');
     setTaskDesc('');
     setDeleteConfirm(null);
+    setEmptyConfirm(null);
     setError('');
   }, [selected?.id, selected?.type]);
 
@@ -183,6 +187,12 @@ export default function Dashboard() {
         return;
       }
 
+      if (emptyConfirm && !folderEmptying && !emptyConfirm.summaryLoading) {
+        event.preventDefault();
+        setEmptyConfirm(null);
+        return;
+      }
+
       if (runEscape()) {
         event.preventDefault();
         return;
@@ -206,6 +216,8 @@ export default function Dashboard() {
     helpOpen,
     deleteConfirm,
     topicDeleting,
+    emptyConfirm,
+    folderEmptying,
     runEscape,
     sidebarOpen,
     search,
@@ -388,10 +400,58 @@ export default function Dashboard() {
     }
   }
 
+  async function openEmptyFolderConfirm() {
+    if (!selected?.id || selected.type !== 'topic') return;
+
+    const pending = {
+      topicId: selected.id,
+      name: selected.name,
+      summaryLoading: true,
+      summary: null,
+    };
+    setEmptyConfirm(pending);
+    setError('');
+
+    try {
+      const summary = await getTopicDeleteSummary(selected.id);
+      setEmptyConfirm((prev) =>
+        prev?.topicId === selected.id
+          ? { ...prev, summaryLoading: false, summary }
+          : prev
+      );
+    } catch (err) {
+      setError(err.message);
+      setEmptyConfirm(null);
+    }
+  }
+
+  async function handleConfirmEmptyFolder() {
+    if (!emptyConfirm) return;
+
+    setError('');
+    setFolderEmptying(true);
+
+    try {
+      await emptyTopicChildren(emptyConfirm.topicId);
+      setEmptyConfirm(null);
+      refresh(emptyConfirm.topicId);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setFolderEmptying(false);
+    }
+  }
+
   const deleteDialogMessage = deleteConfirm?.summaryLoading
     ? 'Checking folder contents…'
     : deleteConfirm
       ? formatDeleteTopicMessage(deleteConfirm.name, deleteConfirm.summary)
+      : '';
+
+  const emptyDialogMessage = emptyConfirm?.summaryLoading
+    ? 'Checking folder contents…'
+    : emptyConfirm
+      ? formatEmptyFolderMessage(emptyConfirm.name, emptyConfirm.summary)
       : '';
 
   return (
@@ -454,6 +514,7 @@ export default function Dashboard() {
                 key={selected.id}
                 folderId={selected.id}
                 folderName={selected.name}
+                folderParentId={selected.parentId ?? null}
                 refreshKey={refreshEvent?.id}
                 directChildren={directChildren}
                 folderTasks={folderTasks}
@@ -478,7 +539,9 @@ export default function Dashboard() {
                 onContentsChanged={handleContentsChanged}
                 onError={setError}
                 onDeleteClick={openTopicDeleteConfirm}
+                onEmptyClick={openEmptyFolderConfirm}
                 deleting={topicDeleting}
+                emptying={folderEmptying}
                 registerEscape={registerEscape}
               />
             ) : (
@@ -506,6 +569,19 @@ export default function Dashboard() {
         danger
         onConfirm={handleConfirmTopicDelete}
         onCancel={() => !topicDeleting && !deleteConfirm?.summaryLoading && setDeleteConfirm(null)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(emptyConfirm)}
+        title="Empty folder"
+        message={emptyDialogMessage}
+        confirmLabel="Empty folder"
+        cancelLabel="Cancel"
+        loading={folderEmptying}
+        confirmDisabled={emptyConfirm?.summaryLoading || emptyConfirm?.summary?.totalCount === 0}
+        danger
+        onConfirm={handleConfirmEmptyFolder}
+        onCancel={() => !folderEmptying && !emptyConfirm?.summaryLoading && setEmptyConfirm(null)}
       />
 
       <KeyboardShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />

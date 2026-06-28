@@ -84,8 +84,11 @@ export default function FolderOptions({
   renaming,
   onMoveFolder,
   moving,
+  folderParentId = null,
   onDeleteClick,
   deleting,
+  onEmptyClick,
+  emptying,
   section = 'menu',
   open: openProp,
   onOpenChange,
@@ -162,6 +165,10 @@ export default function FolderOptions({
 
   function openMove() {
     setView('move');
+  }
+
+  function openMoveToRootConfirm() {
+    setView('move-root');
   }
 
   async function handleMoveToFolder(folder) {
@@ -255,8 +262,17 @@ export default function FolderOptions({
           type="button"
           className="folder-options-danger-link"
           role="menuitem"
+          onClick={onEmptyClick}
+          disabled={deleting || emptying}
+        >
+          Empty folder
+        </button>
+        <button
+          type="button"
+          className="folder-options-danger-link"
+          role="menuitem"
           onClick={onDeleteClick}
-          disabled={deleting}
+          disabled={deleting || emptying}
         >
           Delete folder
         </button>
@@ -339,10 +355,39 @@ export default function FolderOptions({
         excludeId={folderId}
         loading={moving}
         onSelectFolder={handleMoveToFolder}
-        onMoveToRoot={handleMoveToRoot}
+        onMoveToRoot={folderParentId != null ? openMoveToRootConfirm : undefined}
+        moveToRootLabel="Make root topic"
         onCancel={() => setView('menu')}
         compact
       />
+    </div>
+  );
+
+  const moveRootConfirmForm = (
+    <div className="folder-options-form folder-options-form-move-root">
+      <PanelHeader title="Make root topic" onBack={() => setView('move')} />
+      <p className="folder-options-move-root-message">
+        Make <strong>{folderName}</strong> a root topic? It will appear in the main Topics list
+        instead of inside its current folder.
+      </p>
+      <div className="folder-options-move-root-actions">
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => setView('move')}
+          disabled={moving}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={handleMoveToRoot}
+          disabled={moving}
+        >
+          {moving ? 'Moving…' : 'Make root topic'}
+        </button>
+      </div>
     </div>
   );
 
@@ -357,6 +402,7 @@ export default function FolderOptions({
       {view === 'task' && taskForm}
       {view === 'rename' && renameForm}
       {view === 'move' && moveForm}
+      {view === 'move-root' && moveRootConfirmForm}
     </div>
   ) : null;
 
