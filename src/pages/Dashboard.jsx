@@ -1,122 +1,56 @@
 import { useEffect, useRef, useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
-
+import SideBar from '../components/sidebar/SideBar';
 import Logo from '../components/Logo';
-
-import DashHeader from '../components/DashHeader';
-
-import TopicTree from '../components/TopicTree';
-
+import DashHeader from '../components/dash-header/DashHeader';
 import TaskDetail from '../components/TaskDetail';
-
 import FolderWorkspace from '../components/FolderWorkspace';
-
 import WorkspaceStats from '../components/WorkspaceStats';
-
 import CreateTopicCard from '../components/CreateTopicCard';
-
 import RecentTopics from '../components/RecentTopics';
-
 import ConfirmDialog from '../components/ConfirmDialog';
-
 import {
-
   clearAuth,
-
   createTask,
-
   createTopic,
-
-  deleteTask,
-
   deleteTopic,
-
   getTopicDeleteSummary,
-
   getTopics,
-
   getFolderTasks,
-
   getTaskStats,
-
-  patchTask,
-
+  patchTopic,
 } from '../api';
-
-import { formatDeleteTaskMessage, formatDeleteTopicMessage } from '../utils/deleteMessages';
-
-
-
-const TASK_UPDATE_STATUSES = ['Completed', 'Canceled'];
-
-
+import { formatDeleteTopicMessage } from '../utils/deleteMessages';
 
 export default function Dashboard() {
-
   const navigate = useNavigate();
-
-  const username = localStorage.getItem('username') || 'User';
-
   const createTopicRef = useRef(null);
 
-
-
   const [selected, setSelected] = useState(null);
-
   const [search, setSearch] = useState('');
-
   const [refreshEvent, setRefreshEvent] = useState(null);
-
   const [error, setError] = useState('');
 
-
-
   const [childType, setChildType] = useState(null);
-
   const [directChildren, setDirectChildren] = useState([]);
-
   const [folderTasks, setFolderTasks] = useState([]);
-
   const [folderStats, setFolderStats] = useState(null);
-
   const [childrenLoading, setChildrenLoading] = useState(false);
-
   const [addMode, setAddMode] = useState(null);
 
-
-
   const [topicName, setTopicName] = useState('');
-
   const [taskName, setTaskName] = useState('');
-
   const [taskDesc, setTaskDesc] = useState('');
-
-  const [taskEditMode, setTaskEditMode] = useState(null);
-
-  const [editDescription, setEditDescription] = useState('');
-
-  const [editStatus, setEditStatus] = useState('Completed');
-
-  const [taskSaving, setTaskSaving] = useState(false);
-
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-
+  const [topicDeleting, setTopicDeleting] = useState(false);
+  const [folderRenaming, setFolderRenaming] = useState(false);
 
   /* MOBILE-V1 START — revert: remove this block and sidebar/backdrop JSX below */
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-
-
   function closeSidebar() {
-
     setSidebarOpen(false);
-
   }
-
-
 
   function selectItem(item) {
     if (!item) {
@@ -126,97 +60,50 @@ export default function Dashboard() {
         id: item.id,
         name: item.name,
         type: item.type,
-        parentId:
-          item.parentId ??
-          (item.type === 'task' ? (selected?.type === 'topic' ? selected.id : selected?.parentId) : null) ??
-          null,
+        parentId: item.parentId ?? null,
         description: item.description ?? undefined,
         status: item.status ?? undefined,
       });
     }
-
     closeSidebar();
   }
-
-
-
   /* MOBILE-V1 END */
 
-
-
   const parentId = selected?.type === 'topic' ? selected.id : selected?.parentId ?? null;
-
   const isTopicSelected = selected?.type === 'topic';
 
-  const taskStatus = selected?.status || 'Pending';
-
-  const canUpdateStatus = taskStatus === 'Pending';
-
-
-
   useEffect(() => {
-
     setAddMode(null);
-
     setTopicName('');
-
     setTaskName('');
-
     setTaskDesc('');
-
-    setTaskEditMode(null);
-
     setDeleteConfirm(null);
-
-    setEditDescription(selected?.type === 'task' ? (selected.description || '') : '');
-
-    setEditStatus(TASK_UPDATE_STATUSES.includes(taskStatus) ? taskStatus : 'Completed');
-
     setError('');
-
-  }, [selected?.id, selected?.type, taskStatus]);
-
-
+  }, [selected?.id, selected?.type]);
 
   useEffect(() => {
-
     if (!isTopicSelected) {
-
       setChildType(null);
-
       setDirectChildren([]);
-
       setFolderTasks([]);
-
       setFolderStats(null);
-
       return;
-
     }
-
-
 
     let cancelled = false;
     const loadFolderId = selected.id;
 
     setChildrenLoading(true);
-
     setDirectChildren([]);
-
     setFolderTasks([]);
-
     setFolderStats(null);
-
-
 
     Promise.allSettled([
       getTopics(loadFolderId),
       getFolderTasks(loadFolderId),
       getTaskStats(loadFolderId),
     ])
-
       .then(([childrenResult, tasksResult, statsResult]) => {
-
         if (cancelled) return;
 
         const childrenData = childrenResult.status === 'fulfilled'
@@ -234,713 +121,272 @@ export default function Dashboard() {
         const items = childrenData.items || [];
 
         setDirectChildren(items);
-
         setFolderTasks(tasksData.items || []);
-
         setFolderStats(statsData);
-
         setChildType(items.length > 0 ? childrenData.childType : null);
-
       })
-
       .catch(() => {
-
         if (!cancelled) {
-
           setChildType(null);
-
           setDirectChildren([]);
-
           setFolderTasks([]);
-
           setFolderStats(null);
-
         }
-
       })
-
       .finally(() => {
-
         if (!cancelled) setChildrenLoading(false);
-
       });
 
-
-
     return () => {
-
       cancelled = true;
-
     };
-
   }, [selected?.id, isTopicSelected, refreshEvent?.id]);
-
-
 
   function refresh(parentId, { deletedTopicId } = {}) {
     setRefreshEvent({ id: Date.now(), parentId, deletedTopicId });
   }
 
-
-
   function logout() {
-
     clearAuth();
-
     navigate('/login');
-
   }
-
-
 
   function handleNewTopic() {
-
     setSelected(null);
-
     closeSidebar(); /* MOBILE-V1 */
-
     requestAnimationFrame(() => createTopicRef.current?.focus());
-
   }
-
-
 
   function handleSearchSelect(item) {
-
     setSearch('');
-
     setSelected({
-
       id: item.id,
-
       name: item.name,
-
       type: item.type,
-
       parentId: item.parentId ?? null,
-
       description: item.description ?? undefined,
-
       status: item.status ?? undefined,
-
     });
-
     closeSidebar(); /* MOBILE-V1 */
-
   }
-
-
-
-  function closeTaskEdit() {
-
-    setTaskEditMode(null);
-
-    setEditDescription(selected?.description || '');
-
-    setEditStatus(TASK_UPDATE_STATUSES.includes(taskStatus) ? taskStatus : 'Completed');
-
-  }
-
-
 
   async function handleCreateTopic(e) {
-
     e.preventDefault();
-
     if (!topicName.trim()) return;
 
     setError('');
-
     try {
-
       await createTopic(topicName.trim(), parentId);
-
       setTopicName('');
-
       refresh(parentId);
-
     } catch (err) {
-
       setError(err.message);
-
     }
-
   }
 
-
-
   async function handleCreateTask(e) {
-
     e.preventDefault();
-
     if (!taskName.trim() || !taskDesc.trim() || !selected?.id) return;
 
     setError('');
-
     try {
-
       await createTask(selected.id, taskName.trim(), taskDesc.trim());
-
       setTaskName('');
-
       setTaskDesc('');
-
       refresh(selected.id);
-
     } catch (err) {
-
       setError(err.message);
-
     }
-
   }
 
-
-
-  function applyTaskUpdate(updated) {
-
-    const parentId = selected?.parentId ?? null;
-
-    setSelected((prev) =>
-
-      prev?.type === 'task'
-
-        ? { ...prev, description: updated.description, status: updated.status }
-
-        : prev
-
-    );
-
-    setTaskEditMode(null);
-
-    refresh(parentId);
-
+  function handleTaskUpdated(patch) {
+    const refreshParentId = selected?.parentId ?? null;
+    setSelected((prev) => (prev?.type === 'task' ? { ...prev, ...patch } : prev));
+    refresh(refreshParentId);
   }
 
-
-
-  async function handleSaveDescription(e) {
-
-    e.preventDefault();
-
-    if (!selected?.id || selected.type !== 'task' || !editDescription.trim()) return;
-
-    setError('');
-
-    setTaskSaving(true);
-
-    try {
-
-      const updated = await patchTask(selected.id, { description: editDescription.trim() });
-
-      applyTaskUpdate(updated);
-
-    } catch (err) {
-
-      setError(err.message);
-
-    } finally {
-
-      setTaskSaving(false);
-
-    }
-
+  function handleTaskDeleted() {
+    const refreshParentId = selected?.parentId ?? null;
+    const deletedTopicId = selected?.id;
+    setSelected(null);
+    refresh(refreshParentId, { deletedTopicId });
   }
 
-
-
-  async function handleSaveStatus(e) {
-
-    e.preventDefault();
-
-    if (!selected?.id || selected.type !== 'task') return;
-
-    setError('');
-
-    setTaskSaving(true);
-
-    try {
-
-      const updated = await patchTask(selected.id, { status: editStatus });
-
-      applyTaskUpdate(updated);
-
-    } catch (err) {
-
-      setError(err.message);
-
-    } finally {
-
-      setTaskSaving(false);
-
-    }
-
-  }
-
-
-
-  function openTaskDeleteConfirm() {
-
-    if (!selected?.id || selected.type !== 'task') return;
-
-    setDeleteConfirm({
-
-      type: 'task',
-
-      topicId: selected.id,
-
-      name: selected.name,
-
-      parentId: selected.parentId ?? null,
-
-    });
-
-  }
-
-
-
-  async function openTopicDeleteConfirm() {
-
+  async function handleRenameFolder(name) {
     if (!selected?.id || selected.type !== 'topic') return;
 
-
-
-    const pending = {
-
-      type: 'topic',
-
-      topicId: selected.id,
-
-      name: selected.name,
-
-      parentId: selected.parentId ?? null,
-
-      summaryLoading: true,
-
-      summary: null,
-
-    };
-
-    setDeleteConfirm(pending);
-
     setError('');
-
-
-
+    setFolderRenaming(true);
     try {
-
-      const summary = await getTopicDeleteSummary(selected.id);
-
-      setDeleteConfirm((prev) =>
-
-        prev?.type === 'topic' && prev.topicId === selected.id
-
-          ? { ...prev, summaryLoading: false, summary }
-
-          : prev
-
-      );
-
+      const updated = await patchTopic(selected.id, { name });
+      setSelected((prev) => (prev ? { ...prev, name: updated.name } : prev));
+      setFolderStats((prev) => (prev ? { ...prev, topicName: updated.name } : prev));
+      refresh(selected.parentId ?? null);
     } catch (err) {
-
       setError(err.message);
-
-      setDeleteConfirm(null);
-
+      throw err;
+    } finally {
+      setFolderRenaming(false);
     }
-
   }
 
+  async function openTopicDeleteConfirm() {
+    if (!selected?.id || selected.type !== 'topic') return;
 
+    const pending = {
+      topicId: selected.id,
+      name: selected.name,
+      parentId: selected.parentId ?? null,
+      summaryLoading: true,
+      summary: null,
+    };
+    setDeleteConfirm(pending);
+    setError('');
 
-  async function handleConfirmDelete() {
+    try {
+      const summary = await getTopicDeleteSummary(selected.id);
+      setDeleteConfirm((prev) =>
+        prev?.topicId === selected.id
+          ? { ...prev, summaryLoading: false, summary }
+          : prev
+      );
+    } catch (err) {
+      setError(err.message);
+      setDeleteConfirm(null);
+    }
+  }
 
+  async function handleConfirmTopicDelete() {
     if (!deleteConfirm) return;
 
-
-
-    const parentId = deleteConfirm.parentId ?? null;
+    const refreshParentId = deleteConfirm.parentId ?? null;
     const deletedTopicId = deleteConfirm.topicId;
 
     setError('');
-    setTaskSaving(true);
+    setTopicDeleting(true);
 
     try {
-      if (deleteConfirm.type === 'task') {
-        await deleteTask(deleteConfirm.topicId);
-        setTaskEditMode(null);
-      } else {
-        await deleteTopic(deleteConfirm.topicId);
-      }
-
+      await deleteTopic(deleteConfirm.topicId);
       setDeleteConfirm(null);
       setSelected(null);
-      refresh(parentId, { deletedTopicId });
-
+      refresh(refreshParentId, { deletedTopicId });
     } catch (err) {
-
       setError(err.message);
-
     } finally {
-
-      setTaskSaving(false);
-
+      setTopicDeleting(false);
     }
-
   }
 
-
-
   const deleteDialogMessage = deleteConfirm?.summaryLoading
-
     ? 'Checking folder contents…'
-
-    : deleteConfirm?.type === 'topic'
-
+    : deleteConfirm
       ? formatDeleteTopicMessage(deleteConfirm.name, deleteConfirm.summary)
-
-      : deleteConfirm?.type === 'task'
-
-        ? formatDeleteTaskMessage(deleteConfirm.name)
-
-        : '';
-
-
+      : '';
 
   return (
-
     <div className="page dashboard">
-
       <div className="dash-shell">
-
         {/* MOBILE-V1 START */}
-
         {sidebarOpen && (
-
           <button
-
             type="button"
-
             className="mobile-v1-sidebar-backdrop mobile-v1-visible"
-
             aria-label="Close navigation menu"
-
             onClick={closeSidebar}
-
           />
-
         )}
-
         {/* MOBILE-V1 END */}
 
-
-
         <aside className={`sidebar${sidebarOpen ? ' mobile-v1-open' : ''}`}>
-
           <div className="sidebar-brand">
-
             <Logo />
-
           </div>
-
-
-
-          <div className="sidebar-section">
-
-            <p className="sidebar-title">Overview</p>
-
-            <button
-
-              type="button"
-
-              className={`tree-all ${selected == null ? 'is-active' : ''}`}
-
-              onClick={() => selectItem(null)}
-
-            >
-
-              <span className="tree-all-icon" aria-hidden="true">
-
-                <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
-
-                  <path
-
-                    d="M2.5 7.2 8 3.2l5.5 4v5.3a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V7.2z"
-
-                    stroke="currentColor"
-
-                    strokeWidth="1.2"
-
-                    strokeLinejoin="round"
-
-                  />
-
-                </svg>
-
-              </span>
-
-              <span className="tree-all-text">All topics</span>
-
-            </button>
-
-          </div>
-
-
-
-          <div className="sidebar-section sidebar-section-topics">
-
-            <p className="sidebar-title">Topics</p>
-
-            <TopicTree
-
-              selectedId={selected?.id}
-
-              onSelect={selectItem}
-
-              refreshEvent={refreshEvent}
-
-              showAllTopics={false}
-
-            />
-
-          </div>
-
-
-
-          <div className="sidebar-footer">
-
-            <button type="button" className="sidebar-footer-btn" onClick={handleNewTopic}>
-
-              + New topic
-
-            </button>
-
-            <button type="button" className="sidebar-footer-btn sidebar-footer-btn-muted" disabled>
-
-              <span className="sidebar-footer-icon" aria-hidden="true">
-
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
-
-                  <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
-
-                  <path
-
-                    d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85"
-
-                    stroke="currentColor"
-
-                    strokeWidth="1.2"
-
-                    strokeLinecap="round"
-
-                  />
-
-                </svg>
-
-              </span>
-
-              Settings
-
-            </button>
-
-          </div>
-
+          <SideBar
+            selectedId={selected?.id}
+            onNewTopic={handleNewTopic}
+            onSelect={selectItem}
+            refreshEvent={refreshEvent}
+          />
         </aside>
 
-
-
         <div className="dash-main">
-
           <DashHeader
-
-            username={username}
-
             search={search}
-
             onSearchChange={setSearch}
-
             onSearchSelect={handleSearchSelect}
-
             onLogout={logout}
-
             onMenuClick={() => setSidebarOpen(true)} /* MOBILE-V1 */
-
           />
 
-
-
           <main className="main-content">
-
             {error && <p className="error banner-error">{error}</p>}
 
-
-
             {!selected ? (
-
               <section className="workspace-home">
-
                 <WorkspaceStats topicId={null} refreshKey={refreshEvent?.id} />
-
                 <CreateTopicCard
-
                   topicName={topicName}
-
                   onTopicNameChange={setTopicName}
-
                   onSubmit={handleCreateTopic}
-
                   inputRef={createTopicRef}
-
                 />
-
                 <RecentTopics
-
                   refreshKey={refreshEvent?.id}
-
                   onSelectTopic={(topic) => setSelected({ ...topic, type: topic.type || 'topic' })}
-
                   onViewAll={() => setSelected(null)}
-
                 />
-
               </section>
-
             ) : isTopicSelected ? (
-
               <FolderWorkspace
-
                 key={selected.id}
-
                 folderId={selected.id}
-
                 folderName={selected.name}
-
                 refreshKey={refreshEvent?.id}
-
                 directChildren={directChildren}
-
                 folderTasks={folderTasks}
-
                 folderStats={folderStats}
-
                 childrenLoading={childrenLoading}
-
                 childType={childType}
-
                 addMode={addMode}
-
                 onAddModeChange={setAddMode}
-
                 topicName={topicName}
-
                 onTopicNameChange={setTopicName}
-
                 onCreateTopic={handleCreateTopic}
-
                 taskName={taskName}
-
                 onTaskNameChange={setTaskName}
-
                 taskDesc={taskDesc}
-
                 onTaskDescChange={setTaskDesc}
-
                 onCreateTask={handleCreateTask}
-
+                onRenameFolder={handleRenameFolder}
+                renaming={folderRenaming}
                 onSelectChild={selectItem}
-
                 onDeleteClick={openTopicDeleteConfirm}
-
-                deleting={taskSaving}
-
+                deleting={topicDeleting}
               />
-
             ) : (
-
-                  <TaskDetail
-
-                    task={selected}
-
-                    taskEditMode={taskEditMode}
-
-                    editDescription={editDescription}
-
-                    editStatus={editStatus}
-
-                    taskSaving={taskSaving}
-
-                    canUpdateStatus={canUpdateStatus}
-
-                    onEditDescription={() => {
-
-                      setEditDescription(selected.description || '');
-
-                      setTaskEditMode('description');
-
-                    }}
-
-                    onUpdateStatus={() => {
-
-                      setEditStatus('Completed');
-
-                      setTaskEditMode('status');
-
-                    }}
-
-                    onEditDescriptionChange={setEditDescription}
-
-                    onEditStatusChange={setEditStatus}
-
-                    onSaveDescription={handleSaveDescription}
-
-                    onSaveStatus={handleSaveStatus}
-
-                    onCloseEdit={closeTaskEdit}
-
-                    onDeleteClick={openTaskDeleteConfirm}
-
-                  />
-
+              <TaskDetail
+                task={selected}
+                onTaskUpdated={handleTaskUpdated}
+                onTaskDeleted={handleTaskDeleted}
+                onError={setError}
+              />
             )}
-
-
-
           </main>
-
         </div>
-
       </div>
 
-
-
       <ConfirmDialog
-
         open={Boolean(deleteConfirm)}
-
-        title={deleteConfirm?.type === 'topic' ? 'Delete folder' : 'Delete task'}
-
+        title="Delete folder"
         message={deleteDialogMessage}
-
-        confirmLabel={deleteConfirm?.type === 'topic' ? 'Delete folder' : 'Delete task'}
-
+        confirmLabel="Delete folder"
         cancelLabel="Cancel"
-
-        loading={taskSaving}
-
+        loading={topicDeleting}
         confirmDisabled={deleteConfirm?.summaryLoading}
-
         danger
-
-        onConfirm={handleConfirmDelete}
-
-        onCancel={() => !taskSaving && !deleteConfirm?.summaryLoading && setDeleteConfirm(null)}
-
+        onConfirm={handleConfirmTopicDelete}
+        onCancel={() => !topicDeleting && !deleteConfirm?.summaryLoading && setDeleteConfirm(null)}
       />
-
     </div>
-
   );
-
 }
-
-

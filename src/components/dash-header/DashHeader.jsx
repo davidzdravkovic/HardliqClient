@@ -3,7 +3,6 @@ import UserMenu from './UserMenu';
 import SearchResults from './SearchResults';
 
 export default function DashHeader({
-  username,
   search,
   onSearchChange,
   onSearchSelect,
@@ -107,7 +106,7 @@ export default function DashHeader({
             <path d="M8.5 15a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
-        <UserMenu username={username} onLogout={onLogout} compact />
+        <UserMenu onLogout={onLogout} compact />
       </div>
     </header>
   );

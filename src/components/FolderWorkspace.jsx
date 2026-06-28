@@ -22,6 +22,8 @@ export default function FolderWorkspace({
   taskDesc,
   onTaskDescChange,
   onCreateTask,
+  onRenameFolder,
+  renaming,
   onSelectChild,
   onDeleteClick,
   deleting,
@@ -89,6 +91,8 @@ export default function FolderWorkspace({
     taskDesc,
     onTaskDescChange,
     onCreateTask,
+    onRenameFolder,
+    renaming,
     onDeleteClick,
     deleting,
   };
@@ -96,6 +100,7 @@ export default function FolderWorkspace({
   return (
     <WorkspaceStats
       topicId={folderId}
+      displayName={folderName}
       refreshKey={refreshKey}
       headerMenu={
         <FolderOptions

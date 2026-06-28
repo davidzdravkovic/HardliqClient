@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { searchTopics } from '../api';
-import useDebouncedValue from './useDebouncedValue';
+import { searchTopics } from '../../api';
+import useDebouncedValue from '../../hooks/useDebouncedValue';
 
 const MIN_QUERY_LENGTH = 2;
 const PAGE_SIZE = 20;

@@ -1,4 +1,4 @@
-import useTopicSearch from '../hooks/useTopicSearch';
+import useTopicSearch from './useTopicSearch';
 
 function formatPath(path) {
   if (!path?.length) return 'All topics';

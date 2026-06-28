@@ -64,10 +64,12 @@ const PILE_CONFIG = [
 ];
 
 function StatsMetrics({ stats, period, compact = false, panel = false }) {
+  if (stats.totalTasks === 0) {
+    return <p className="workspace-stats-empty">No tasks yet.</p>;
+  }
   const sinceLabel = formatSinceLabel(stats.executedSince, period);
   const executedThisPeriod = (stats.completedSince ?? 0) + (stats.canceledSince ?? 0);
-  const progressPct =
-    stats.totalTasks > 0 ? Math.round((stats.completed / stats.totalTasks) * 100) : 0;
+  const progressPct = Math.round((stats.completed / stats.totalTasks) * 100);
 
   const piles = [
     ...PILE_CONFIG.map((item) => ({
@@ -85,10 +87,6 @@ function StatsMetrics({ stats, period, compact = false, panel = false }) {
 
   const stackPiles = piles.filter((p) => p.key !== 'total' && p.count > 0);
   const stackLabel = stackPiles.map((p) => `${p.count} ${p.label.toLowerCase()}`).join(', ');
-
-  if (stats.totalTasks === 0) {
-    return <p className="workspace-stats-empty">No tasks yet.</p>;
-  }
 
   return (
     <>
@@ -140,7 +138,7 @@ function StatsMetrics({ stats, period, compact = false, panel = false }) {
   );
 }
 
-export default function WorkspaceStats({ topicId, refreshKey, children, headerMenu }) {
+export default function WorkspaceStats({ topicId, displayName, refreshKey, children, headerMenu }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('week');
@@ -166,11 +164,10 @@ export default function WorkspaceStats({ topicId, refreshKey, children, headerMe
     };
   }, [topicId, refreshKey, period]);
 
-  const title = stats?.scope === 'folder' && stats?.topicName ? stats.topicName : 'All topics';
-  const subtitle =
-    stats?.scope === 'folder'
-      ? 'Tasks and progress in this folder'
-      : 'Overview of all your tasks and progress';
+  const title = isFolderView
+    ? (displayName || stats?.topicName || 'Folder')
+    : 'All topics';
+  const subtitle = stats?.scope === 'folder'   ? 'Tasks and progress in this folder' : 'Overview of all your tasks and progress';
 
   const periodSelect = (
     <select

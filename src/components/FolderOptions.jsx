@@ -27,6 +27,8 @@ export default function FolderOptions({
   taskDesc,
   onTaskDescChange,
   onCreateTask,
+  onRenameFolder,
+  renaming,
   onDeleteClick,
   deleting,
   section = 'menu',
@@ -35,6 +37,7 @@ export default function FolderOptions({
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [view, setView] = useState('menu');
+  const [renameName, setRenameName] = useState(folderName);
   const menuRef = useRef(null);
   const panelRef = useRef(null);
   const isMobileSheet = useIsMobileSheet();
@@ -46,6 +49,7 @@ export default function FolderOptions({
       setInternalOpen(false);
       setView('menu');
     }
+    setRenameName(folderName);
   }, [folderId, folderName, isControlled]);
 
   useEffect(() => {
@@ -96,6 +100,26 @@ export default function FolderOptions({
     onAddModeChange?.('task');
   }
 
+  function openRename() {
+    setRenameName(folderName);
+    setView('rename');
+  }
+
+  async function handleRenameSubmit(e) {
+    e.preventDefault();
+    const trimmed = renameName.trim();
+    if (!trimmed || trimmed === folderName) {
+      setOpen(false);
+      return;
+    }
+    try {
+      await onRenameFolder?.(trimmed);
+      setOpen(false);
+    } catch {
+      // error shown by parent
+    }
+  }
+
   const toggle = (
     <button
       type="button"
@@ -127,6 +151,11 @@ export default function FolderOptions({
           </button>
         </li>
       )}
+      <li role="none">
+        <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openRename}>
+          Rename folder
+        </button>
+      </li>
       <li className="folder-options-menu-divider" role="separator" aria-hidden="true" />
       <li role="none">
         <button
@@ -185,6 +214,31 @@ export default function FolderOptions({
     </div>
   );
 
+  const renameForm = (
+    <div className="folder-options-form">
+      <p className="folder-options-form-title">Rename folder</p>
+      <form className="add-form add-form-folder add-inline" onSubmit={handleRenameSubmit}>
+        <div className="add-form-row">
+          <input
+            className="field"
+            placeholder="Folder name"
+            value={renameName}
+            onChange={(e) => setRenameName(e.target.value)}
+            disabled={renaming}
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="btn btn-folder btn-sm"
+            disabled={renaming || !renameName.trim() || renameName.trim() === folderName}
+          >
+            {renaming ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+
   const panel = open ? (
     <div
       ref={panelRef}
@@ -193,6 +247,7 @@ export default function FolderOptions({
       {view === 'menu' && menuList}
       {view === 'topic' && topicForm}
       {view === 'task' && taskForm}
+      {view === 'rename' && renameForm}
     </div>
   ) : null;
 

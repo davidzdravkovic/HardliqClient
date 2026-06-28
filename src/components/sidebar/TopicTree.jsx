@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getTopics } from '../api';
+import { getTopics } from '../../api';
 import { FolderIcon, TaskIcon } from './TreeIcons';
 
 function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, children, loading, refreshEvent }) {
@@ -25,7 +25,8 @@ function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, child
         )}
         {isTask && <span className="tree-chevron tree-chevron-spacer" />}
         <span className="tree-icon">
-          {isTask ? <TaskIcon status={node.status} /> : <FolderIcon open={expanded} />}        </span>
+          {isTask ? <TaskIcon status={node.status} /> : <FolderIcon open={expanded} />}
+        </span>
         <span className="tree-label">{node.name}</span>
       </button>
 
@@ -71,20 +72,20 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
     }
   }, [refreshEvent?.id, node.id, loadChildren]);
 
-  async function handleToggle(n) {
-    if (selectedId === n.id) {
+  async function handleToggle(node) {
+    if (selectedId === node.id) {
       if (expanded) {
         setExpanded(false);
         return;
       }
-      await loadChildren();
+      if (children === null) await loadChildren();
       setExpanded(true);
       return;
     }
 
-    onSelect(n);
+    onSelect(node);
     if (!expanded) {
-      await loadChildren();
+      if (children === null) await loadChildren();
       setExpanded(true);
     } else {
       setExpanded(false);
@@ -106,7 +107,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
   );
 }
 
-export default function TopicTree({ selectedId, onSelect, refreshEvent, showAllTopics = true, searchQuery = '' }) {
+export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
   const [roots, setRoots] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -118,47 +119,17 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent, showAllT
 
   useEffect(() => {
     if (!refreshEvent) return;
-
-    if (refreshEvent.deletedTopicId != null) {
-      setRoots((prev) => prev.filter((node) => node.id !== refreshEvent.deletedTopicId));
-    }
-
     getTopics(null).then((data) => setRoots(data.items || []));
   }, [refreshEvent?.id]);
 
   if (loading) return <p className="tree-muted">Loading…</p>;
 
-  const query = searchQuery.trim().toLowerCase();
-  const visibleRoots = query
-    ? roots.filter((node) => node.name.toLowerCase().includes(query))
-    : roots;
-
   return (
     <div className="topic-tree">
-      {showAllTopics && (
-        <button
-          type="button"
-          className={`tree-all ${selectedId == null ? 'is-active' : ''}`}
-          onClick={() => onSelect(null)}
-        >
-          <span className="tree-all-icon" aria-hidden="true">
-            <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
-              <path
-                d="M2.5 7.2 8 3.2l5.5 4v5.3a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V7.2z"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          <span className="tree-all-text">All topics</span>
-        </button>
-      )}
-
-      {visibleRoots.length === 0 ? (
-        <p className="tree-muted">{query ? 'No matches' : 'No topics yet'}</p>
+      {roots.length === 0 ? (
+        <p className="tree-muted">No topics yet</p>
       ) : (
-        visibleRoots.map((node) => (
+        roots.map((node) => (
           <TreeBranch
             key={node.id}
             node={node}

@@ -2151,6 +2151,17 @@ textarea {
   max-width: 32rem;
 }
 
+.task-edit-inline {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-edit-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .task-edit-label {
   display: flex;
   flex-direction: column;

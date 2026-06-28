@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+  const username = localStorage.getItem('username') || 'User';
 
-export default function UserMenu({ username, onLogout, compact = false }) {
+
+export default function UserMenu({ onLogout, compact = false }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 

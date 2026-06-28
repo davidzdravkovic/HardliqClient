@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getTopics } from '../api';
-import { FolderIcon, TaskIcon } from './TreeIcons';
+import { FolderIcon, TaskIcon } from './sidebar/TreeIcons';
 import { useIsMobileSheet } from '../hooks/useIsMobileSheet';
 
 // PAGE-SIZE: wire pagination here later (currently loads all items).

@@ -28,7 +28,9 @@ function logoutExpiredSession() {
   }
 }
 
+//Compose a http response and returns a request 
 async function request(url, options = {}, { useAuth = true } = {}) {
+
   const token = useAuth ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
   const hadToken = Boolean(token);
 
@@ -37,17 +39,17 @@ async function request(url, options = {}, { useAuth = true } = {}) {
     headers: { ...buildHeaders(useAuth), ...options.headers },
   });
 
-  const data = await res.json().catch(() => ({}));
-
   if (res.status === 401 && useAuth && hadToken) {
     logoutExpiredSession();
     throw new Error('Session expired');
   }
 
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const msg = data.message || data.title || data.errors
-      ? Object.values(data.errors || {}).flat().join(' ')
-      : 'Request failed';
+    const msg = data.message || data.title || (data.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : 'Request failed');
     throw new Error(typeof msg === 'string' ? msg : 'Request failed');
   }
 
@@ -106,6 +108,13 @@ export function createTopic(name, parentId) {
   return request('/topics', {
     method: 'POST',
     body: JSON.stringify({ name, parentId: parentId ?? null }),
+  });
+}
+
+export function patchTopic(topicId, { name }) {
+  return request(`/topics/${topicId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
   });
 }
 
