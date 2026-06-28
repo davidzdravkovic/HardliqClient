@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { getTopics } from '../../api';
 import { FolderIcon, TaskIcon } from './TreeIcons';
 
+function pruneRemovedItems(items, removedId) {
+  if (!items || removedId == null) return items;
+  return items.filter((item) => item.id !== removedId);
+}
+
 function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, children, loading, refreshEvent }) {
   const isTask = node.type === 'task';
   const isSelected = selectedId === node.id;
@@ -66,11 +71,16 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
   useEffect(() => {
     if (!refreshEvent) return;
 
-    if (refreshEvent.parentId === node.id) {
+    const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
+    if (removedId != null) {
+      setChildren((prev) => pruneRemovedItems(prev, removedId));
+    }
+
+    if (refreshEvent.parentIds?.includes(node.id)) {
       setExpanded(true);
       loadChildren();
     }
-  }, [refreshEvent?.id, node.id, loadChildren]);
+  }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId, node.id, loadChildren]);
 
   async function handleToggle(node) {
     if (selectedId === node.id) {
@@ -119,8 +129,14 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
 
   useEffect(() => {
     if (!refreshEvent) return;
+
+    const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
+    if (removedId != null) {
+      setRoots((prev) => pruneRemovedItems(prev, removedId));
+    }
+
     getTopics(null).then((data) => setRoots(data.items || []));
-  }, [refreshEvent?.id]);
+  }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId]);
 
   if (loading) return <p className="tree-muted">Loading…</p>;
 
