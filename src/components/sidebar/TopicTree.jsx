@@ -186,7 +186,7 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
   return (
     <div className="topic-tree">
       {roots.length === 0 ? (
-        <p className="tree-muted">No topics yet</p>
+        <p className="tree-muted">No folders yet</p>
       ) : (
         roots.map((node) => (
           <TreeBranch

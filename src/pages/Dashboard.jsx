@@ -443,13 +443,13 @@ export default function Dashboard() {
   }
 
   const deleteDialogMessage = deleteConfirm?.summaryLoading
-    ? 'Checking folder contents…'
+    ? 'Checking topic contents…'
     : deleteConfirm
       ? formatDeleteTopicMessage(deleteConfirm.name, deleteConfirm.summary)
       : '';
 
   const emptyDialogMessage = emptyConfirm?.summaryLoading
-    ? 'Checking folder contents…'
+    ? 'Checking topic contents…'
     : emptyConfirm
       ? formatEmptyFolderMessage(emptyConfirm.name, emptyConfirm.summary)
       : '';
@@ -560,9 +560,9 @@ export default function Dashboard() {
 
       <ConfirmDialog
         open={Boolean(deleteConfirm)}
-        title="Delete folder"
+        title="Delete topic"
         message={deleteDialogMessage}
-        confirmLabel="Delete folder"
+        confirmLabel="Delete topic"
         cancelLabel="Cancel"
         loading={topicDeleting}
         confirmDisabled={deleteConfirm?.summaryLoading}
@@ -573,9 +573,9 @@ export default function Dashboard() {
 
       <ConfirmDialog
         open={Boolean(emptyConfirm)}
-        title="Empty folder"
+        title="Empty topic"
         message={emptyDialogMessage}
-        confirmLabel="Empty folder"
+        confirmLabel="Empty topic"
         cancelLabel="Cancel"
         loading={folderEmptying}
         confirmDisabled={emptyConfirm?.summaryLoading || emptyConfirm?.summary?.totalCount === 0}

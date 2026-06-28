@@ -226,7 +226,7 @@ export default function FolderOptions({
       aria-expanded={open}
       aria-haspopup="menu"
       aria-label={`Options for ${folderName}`}
-      title="Folder options"
+      title="Topic options"
       onClick={() => setOpen((value) => !value)}
       disabled={childrenLoading}
     >
@@ -236,7 +236,7 @@ export default function FolderOptions({
 
   const menuList = (
     <div className="folder-options-menu" role="menu" aria-label={`Actions for ${folderName}`}>
-      <PanelHeader title="Folder options" />
+      <PanelHeader title="Topic options" />
 
       {(canAddFolder || canAddTask) && (
         <div className="folder-options-section">
@@ -245,7 +245,7 @@ export default function FolderOptions({
             {canAddFolder && (
               <button type="button" className="folder-options-chip folder-options-chip-folder" role="menuitem" onClick={openAddFolder}>
                 <MenuIcon type="folder" />
-                <span>Folder</span>
+                <span>Topic</span>
               </button>
             )}
             {canAddTask && (
@@ -284,7 +284,7 @@ export default function FolderOptions({
           >
             <MenuIcon type="empty" />
             <span>Empty</span>
-            <span className="folder-options-tile-hint">Keep folder</span>
+            <span className="folder-options-tile-hint">Keep topic</span>
           </button>
           <button
             type="button"
@@ -304,12 +304,12 @@ export default function FolderOptions({
 
   const topicForm = (
     <div className="folder-options-form">
-      <PanelHeader title="New folder" onBack={() => setView('menu')} />
+      <PanelHeader title="New topic" onBack={() => setView('menu')} />
       <form className="add-form add-form-folder add-inline" onSubmit={onCreateTopic}>
         <div className="add-form-row">
           <input
             className="field"
-            placeholder="Folder name"
+            placeholder="Topic name"
             value={topicName}
             onChange={(e) => onTopicNameChange(e.target.value)}
             autoFocus
@@ -347,12 +347,12 @@ export default function FolderOptions({
 
   const renameForm = (
     <div className="folder-options-form">
-      <PanelHeader title="Rename folder" onBack={() => setView('menu')} />
+      <PanelHeader title="Rename topic" onBack={() => setView('menu')} />
       <form className="add-form add-form-folder add-inline" onSubmit={handleRenameSubmit}>
         <div className="add-form-row">
           <input
             className="field"
-            placeholder="Folder name"
+            placeholder="Topic name"
             value={renameName}
             onChange={(e) => setRenameName(e.target.value)}
             disabled={renaming}
@@ -372,13 +372,13 @@ export default function FolderOptions({
 
   const moveForm = (
     <div className="folder-options-form folder-options-form-move">
-      <PanelHeader title="Move folder" onBack={() => setView('menu')} />
+      <PanelHeader title="Move topic" onBack={() => setView('menu')} />
       <MoveTargetPicker
         excludeId={folderId}
         loading={moving}
         onSelectFolder={handleMoveToFolder}
         onMoveToRoot={folderParentId != null ? openMoveToRootConfirm : undefined}
-        moveToRootLabel="Make root topic"
+        moveToRootLabel="Make root folder"
         onCancel={() => setView('menu')}
         compact
       />
@@ -387,10 +387,10 @@ export default function FolderOptions({
 
   const moveRootConfirmForm = (
     <div className="folder-options-form folder-options-form-move-root">
-      <PanelHeader title="Make root topic" onBack={() => setView('move')} />
+      <PanelHeader title="Make root folder" onBack={() => setView('move')} />
       <p className="folder-options-move-root-message">
-        Make <strong>{folderName}</strong> a root topic? It will appear in the main Topics list
-        instead of inside its current folder.
+        Make <strong>{folderName}</strong> a root folder? It will appear in the main Folders list
+        instead of inside its current topic.
       </p>
       <div className="folder-options-move-root-actions">
         <button
@@ -407,7 +407,7 @@ export default function FolderOptions({
           onClick={handleMoveToRoot}
           disabled={moving}
         >
-          {moving ? 'Moving…' : 'Make root topic'}
+          {moving ? 'Moving…' : 'Make root folder'}
         </button>
       </div>
     </div>

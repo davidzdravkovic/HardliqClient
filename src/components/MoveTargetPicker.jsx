@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { searchTopics } from '../api';
 
 function formatPath(path) {
-  if (!path?.length) return 'All topics';
+  if (!path?.length) return 'All folders';
   return path.map((segment) => segment.name).join(' / ');
 }
 
@@ -11,7 +11,7 @@ export default function MoveTargetPicker({
   excludeId,
   onSelectFolder,
   onMoveToRoot,
-  moveToRootLabel = 'Make root topic',
+  moveToRootLabel = 'Make root folder',
   onCancel,
   loading = false,
   compact = false,
@@ -74,7 +74,7 @@ export default function MoveTargetPicker({
       )}
       <input
         className="field"
-        placeholder="Search folders…"
+        placeholder="Search topics…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         disabled={loading}
@@ -83,7 +83,7 @@ export default function MoveTargetPicker({
       {searching && <p className="folder-contents-muted">Searching…</p>}
       {error && <p className="error">{error}</p>}
       {!searching && query.trim().length >= 2 && items.length === 0 && !error && (
-        <p className="folder-contents-muted">No folders found.</p>
+        <p className="folder-contents-muted">No topics found.</p>
       )}
       {items.length > 0 && (
         <ul className="move-target-list">

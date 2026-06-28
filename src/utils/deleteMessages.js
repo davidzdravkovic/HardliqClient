@@ -1,11 +1,11 @@
 export function formatDeleteTopicMessage(name, summary) {
   if (!summary || summary.totalCount === 0) {
-    return `Delete "${name}"? It's empty — only this folder will be removed.`;
+    return `Delete "${name}"? It's empty — only this topic will be removed.`;
   }
 
   const parts = [];
   if (summary.folderCount > 0) {
-    parts.push(`${summary.folderCount} folder${summary.folderCount === 1 ? '' : 's'}`);
+    parts.push(`${summary.folderCount} topic${summary.folderCount === 1 ? '' : 's'}`);
   }
   if (summary.taskCount > 0) {
     parts.push(`${summary.taskCount} task${summary.taskCount === 1 ? '' : 's'}`);
@@ -20,16 +20,16 @@ export function formatDeleteTaskMessage(name) {
 
 export function formatEmptyFolderMessage(name, summary) {
   if (!summary || summary.totalCount === 0) {
-    return `Empty "${name}"? This folder has nothing inside.`;
+    return `Empty "${name}"? This topic has nothing inside.`;
   }
 
   const parts = [];
   if (summary.folderCount > 0) {
-    parts.push(`${summary.folderCount} folder${summary.folderCount === 1 ? '' : 's'}`);
+    parts.push(`${summary.folderCount} topic${summary.folderCount === 1 ? '' : 's'}`);
   }
   if (summary.taskCount > 0) {
     parts.push(`${summary.taskCount} task${summary.taskCount === 1 ? '' : 's'}`);
   }
 
-  return `Empty "${name}"? This will permanently delete everything inside (${parts.join(', ')}). The folder itself will be kept.`;
+  return `Empty "${name}"? This will permanently delete everything inside (${parts.join(', ')}). The topic itself will be kept.`;
 }
