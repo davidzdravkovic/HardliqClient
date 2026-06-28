@@ -149,28 +149,38 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
   const [roots, setRoots] = useState([]);
   const [loading, setLoading] = useState(true);
   const fetchIdRef = useRef(0);
+  const hasRootsRef = useRef(false);
 
   useEffect(() => {
     const requestId = refreshEvent?.id ?? Date.now();
     fetchIdRef.current = requestId;
-    setLoading(true);
 
     const removedId = refreshEvent?.movedTopicId ?? refreshEvent?.deletedTopicId;
     if (removedId != null) {
       setRoots((prev) => pruneRemovedItems(prev, removedId));
     }
 
+    const needsRootReload =
+      refreshEvent == null ||
+      refreshEvent.parentIds?.some((id) => id == null) ||
+      refreshEvent.movedTopicId != null;
+
+    if (!needsRootReload) return;
+
+    if (!hasRootsRef.current) setLoading(true);
+
     getTopics(null)
       .then((data) => {
         if (requestId !== fetchIdRef.current) return;
         setRoots(data.items || []);
+        hasRootsRef.current = true;
       })
       .finally(() => {
         if (requestId === fetchIdRef.current) setLoading(false);
       });
   }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId]);
 
-  if (loading) return <p className="tree-muted">Loading…</p>;
+  if (loading && !hasRootsRef.current) return <p className="tree-muted">Loading…</p>;
 
   return (
     <div className="topic-tree">
