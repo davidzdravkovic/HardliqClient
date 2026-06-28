@@ -143,8 +143,12 @@ export default function Dashboard() {
     };
   }, [selected?.id, isTopicSelected, refreshEvent?.id]);
 
-  function refresh(parentId, { deletedTopicId } = {}) {
-    setRefreshEvent({ id: Date.now(), parentId, deletedTopicId });
+  function refresh(parentIds, { deletedTopicId } = {}) {
+    const list = Array.isArray(parentIds) ? parentIds : [parentIds];
+    const uniqueParentIds = list.filter(
+      (id, index) => list.findIndex((candidate) => candidate === id) === index
+    );
+    setRefreshEvent({ id: Date.now(), parentIds: uniqueParentIds, deletedTopicId });
   }
 
   function logout() {
@@ -240,8 +244,7 @@ export default function Dashboard() {
     try {
       await patchTopic(selected.id, { moveParent: true, parentId });
       setSelected(null);
-      refresh(oldParentId);
-      refresh(parentId ?? null);
+      refresh([oldParentId, parentId]);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -258,8 +261,7 @@ export default function Dashboard() {
   function handleTaskMoved(newParentId) {
     const oldParentId = selected?.parentId ?? null;
     setSelected(null);
-    refresh(oldParentId);
-    refresh(newParentId ?? null);
+    refresh([oldParentId, newParentId]);
   }
 
   async function openTopicDeleteConfirm() {

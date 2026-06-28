@@ -232,52 +232,50 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
             <div className="task-actions task-actions-primary">
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
+                className="task-action-chip"
                 onClick={() => {
                   setEditName(task.name || '');
                   setEditMode('name');
                 }}
               >
-                Rename task
+                Rename
               </button>
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
+                className="task-action-chip"
                 onClick={() => setMoveOpen(true)}
               >
-                Move task
+                Move
               </button>
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
+                className="task-action-chip"
                 onClick={() => {
                   setEditDescription(task.description || '');
                   setEditMode('description');
                 }}
               >
-                Edit description
+                Description
               </button>
               {canUpdateStatus && (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm"
+                  className="task-action-chip"
                   onClick={() => {
                     setEditStatus('Completed');
                     setEditMode('status');
                   }}
                 >
-                  Update status
+                  Status
                 </button>
               )}
-            </div>
-            <div className="task-actions task-actions-danger">
               <button
                 type="button"
-                className="btn btn-danger btn-sm"
+                className="task-action-chip task-action-chip-danger"
                 onClick={() => setDeleteOpen(true)}
                 disabled={saving}
               >
-                Delete task
+                Delete
               </button>
             </div>
           </footer>
@@ -285,12 +283,13 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
 
         {moveOpen && (
           <div className="task-detail-move">
+            <p className="folder-options-section-label">Move to folder</p>
             <MoveTargetPicker
-              title="Move task to folder"
               excludeId={task.id}
               loading={saving}
               onSelectFolder={(folder) => handleMoveTask(folder.id)}
               onCancel={() => !saving && setMoveOpen(false)}
+              compact
             />
           </div>
         )}

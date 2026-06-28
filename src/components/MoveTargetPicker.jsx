@@ -13,6 +13,7 @@ export default function MoveTargetPicker({
   onMoveToRoot,
   onCancel,
   loading = false,
+  compact = false,
 }) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState([]);
@@ -58,12 +59,12 @@ export default function MoveTargetPicker({
   }, [query, excludeId]);
 
   return (
-    <div className="move-target-picker">
-      <p className="folder-options-form-title">{title}</p>
+    <div className={`move-target-picker${compact ? ' move-target-picker-compact' : ''}`}>
+      {!compact && title && <p className="folder-options-form-title">{title}</p>}
       {onMoveToRoot && (
         <button
           type="button"
-          className="folder-options-menu-item move-target-root"
+          className="move-target-root-btn"
           onClick={onMoveToRoot}
           disabled={loading}
         >
@@ -100,7 +101,7 @@ export default function MoveTargetPicker({
           ))}
         </ul>
       )}
-      <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} disabled={loading}>
+      <button type="button" className="move-target-cancel" onClick={onCancel} disabled={loading}>
         Cancel
       </button>
     </div>

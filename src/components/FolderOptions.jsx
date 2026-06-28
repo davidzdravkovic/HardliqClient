@@ -13,6 +13,58 @@ function MenuDotsIcon() {
   );
 }
 
+function MenuIcon({ type }) {
+  if (type === 'folder') {
+    return (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1 1.2H12.5A1.5 1.5 0 0 1 14 5.7v6.8A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5v-8Z" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  if (type === 'task') {
+    return (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="11" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.2" />
+        <path d="m5 8 2 2 4-4.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (type === 'rename') {
+    return (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M10.5 2.5 13.5 5.5 5 14H2v-3L10.5 2.5Z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (type === 'move') {
+    return (
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M8 2.5v11M4.5 6 8 2.5 11.5 6M4.5 10 8 13.5 11.5 10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <path d="M3.5 4h9M5.5 8h5M7.5 12h1" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PanelHeader({ title, onBack }) {
+  return (
+    <div className="folder-options-panel-head">
+      {onBack ? (
+        <button type="button" className="folder-options-back" onClick={onBack} aria-label="Back">
+          ←
+        </button>
+      ) : (
+        <span className="folder-options-back-spacer" aria-hidden="true" />
+      )}
+      <p className="folder-options-panel-title">{title}</p>
+    </div>
+  );
+}
+
 export default function FolderOptions({
   folderName,
   folderId,
@@ -161,49 +213,60 @@ export default function FolderOptions({
   );
 
   const menuList = (
-    <ul className="folder-options-menu" role="menu" aria-label={`Actions for ${folderName}`}>
-      {canAddFolder && (
-        <li role="none">
-          <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openAddFolder}>
-            Add folder
-          </button>
-        </li>
+    <div className="folder-options-menu" role="menu" aria-label={`Actions for ${folderName}`}>
+      <PanelHeader title="Folder options" />
+
+      {(canAddFolder || canAddTask) && (
+        <div className="folder-options-section">
+          <p className="folder-options-section-label">Create</p>
+          <div className="folder-options-chips">
+            {canAddFolder && (
+              <button type="button" className="folder-options-chip folder-options-chip-folder" role="menuitem" onClick={openAddFolder}>
+                <MenuIcon type="folder" />
+                <span>Folder</span>
+              </button>
+            )}
+            {canAddTask && (
+              <button type="button" className="folder-options-chip folder-options-chip-task" role="menuitem" onClick={openAddTask}>
+                <MenuIcon type="task" />
+                <span>Task</span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
-      {canAddTask && (
-        <li role="none">
-          <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openAddTask}>
-            Add task
+
+      <div className="folder-options-section">
+        <p className="folder-options-section-label">Organize</p>
+        <div className="folder-options-grid">
+          <button type="button" className="folder-options-tile" role="menuitem" onClick={openRename}>
+            <MenuIcon type="rename" />
+            <span>Rename</span>
           </button>
-        </li>
-      )}
-      <li role="none">
-        <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openRename}>
-          Rename folder
-        </button>
-      </li>
-      <li role="none">
-        <button type="button" className="folder-options-menu-item" role="menuitem" onClick={openMove}>
-          Move folder
-        </button>
-      </li>
-      <li className="folder-options-menu-divider" role="separator" aria-hidden="true" />
-      <li role="none">
+          <button type="button" className="folder-options-tile" role="menuitem" onClick={openMove}>
+            <MenuIcon type="move" />
+            <span>Move</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="folder-options-section folder-options-section-danger">
         <button
           type="button"
-          className="folder-options-menu-item folder-options-menu-item-danger"
+          className="folder-options-danger-link"
           role="menuitem"
           onClick={onDeleteClick}
           disabled={deleting}
         >
           Delete folder
         </button>
-      </li>
-    </ul>
+      </div>
+    </div>
   );
 
   const topicForm = (
     <div className="folder-options-form">
-      <p className="folder-options-form-title">New folder</p>
+      <PanelHeader title="New folder" onBack={() => setView('menu')} />
       <form className="add-form add-form-folder add-inline" onSubmit={onCreateTopic}>
         <div className="add-form-row">
           <input
@@ -221,7 +284,7 @@ export default function FolderOptions({
 
   const taskForm = (
     <div className="folder-options-form">
-      <p className="folder-options-form-title">New task</p>
+      <PanelHeader title="New task" onBack={() => setView('menu')} />
       <form className="add-form add-form-task" onSubmit={onCreateTask}>
         <input
           className="field"
@@ -246,7 +309,7 @@ export default function FolderOptions({
 
   const renameForm = (
     <div className="folder-options-form">
-      <p className="folder-options-form-title">Rename folder</p>
+      <PanelHeader title="Rename folder" onBack={() => setView('menu')} />
       <form className="add-form add-form-folder add-inline" onSubmit={handleRenameSubmit}>
         <div className="add-form-row">
           <input
@@ -270,20 +333,24 @@ export default function FolderOptions({
   );
 
   const moveForm = (
-    <MoveTargetPicker
-      title="Move folder"
-      excludeId={folderId}
-      loading={moving}
-      onSelectFolder={handleMoveToFolder}
-      onMoveToRoot={handleMoveToRoot}
-      onCancel={() => setView('menu')}
-    />
+    <div className="folder-options-form folder-options-form-move">
+      <PanelHeader title="Move folder" onBack={() => setView('menu')} />
+      <MoveTargetPicker
+        excludeId={folderId}
+        loading={moving}
+        onSelectFolder={handleMoveToFolder}
+        onMoveToRoot={handleMoveToRoot}
+        onCancel={() => setView('menu')}
+        compact
+      />
+    </div>
   );
 
+  const isFormView = view !== 'menu';
   const panel = open ? (
     <div
       ref={panelRef}
-      className={`folder-options-panel${isMobileSheet ? ' folder-mobile-sheet' : ''}`}
+      className={`folder-options-panel${isFormView ? ' folder-options-panel-form' : ' folder-options-panel-menu'}${isMobileSheet ? ' folder-mobile-sheet' : ''}`}
     >
       {view === 'menu' && menuList}
       {view === 'topic' && topicForm}
