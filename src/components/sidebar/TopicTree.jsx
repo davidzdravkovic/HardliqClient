@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getTopics } from '../../api';
 import { FolderIcon, TaskIcon } from './TreeIcons';
 
@@ -7,7 +7,18 @@ function pruneRemovedItems(items, removedId) {
   return items.filter((item) => item.id !== removedId);
 }
 
-function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, children, loading, refreshEvent }) {
+function TreeNode({
+  node,
+  depth,
+  selectedId,
+  onSelect,
+  onToggle,
+  expanded,
+  children,
+  loading,
+  refreshEvent,
+  parentFolderId,
+}) {
   const isTask = node.type === 'task';
   const isSelected = selectedId === node.id;
 
@@ -19,7 +30,10 @@ function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, child
         style={{ paddingLeft: `${0.5 + depth * 0.85}rem` }}
         onClick={() => {
           if (isTask) {
-            onSelect(node);
+            onSelect({
+              ...node,
+              parentId: node.parentId ?? parentFolderId ?? null,
+            });
           } else {
             onToggle(node);
           }
@@ -45,6 +59,7 @@ function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, child
               selectedId={selectedId}
               onSelect={onSelect}
               refreshEvent={refreshEvent}
+              parentFolderId={node.id}
             />
           ))}
         </div>
@@ -53,23 +68,27 @@ function TreeNode({ node, depth, selectedId, onSelect, onToggle, expanded, child
   );
 }
 
-function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
+function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFolderId = null }) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState(null);
   const [loading, setLoading] = useState(false);
+  const fetchIdRef = useRef(0);
 
-  const loadChildren = useCallback(async () => {
+  const loadChildren = useCallback(async (requestId) => {
     setLoading(true);
     try {
       const data = await getTopics(node.id);
+      if (requestId !== fetchIdRef.current) return;
       setChildren(data.items || []);
     } finally {
-      setLoading(false);
+      if (requestId === fetchIdRef.current) setLoading(false);
     }
   }, [node.id]);
 
   useEffect(() => {
     if (!refreshEvent) return;
+
+    fetchIdRef.current = refreshEvent.id;
 
     const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
     if (removedId != null) {
@@ -78,7 +97,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
 
     if (refreshEvent.parentIds?.includes(node.id)) {
       setExpanded(true);
-      loadChildren();
+      loadChildren(refreshEvent.id);
     }
   }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId, node.id, loadChildren]);
 
@@ -88,14 +107,22 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
         setExpanded(false);
         return;
       }
-      if (children === null) await loadChildren();
+      if (children === null) {
+        const requestId = Date.now();
+        fetchIdRef.current = requestId;
+        await loadChildren(requestId);
+      }
       setExpanded(true);
       return;
     }
 
     onSelect(node);
     if (!expanded) {
-      if (children === null) await loadChildren();
+      if (children === null) {
+        const requestId = Date.now();
+        fetchIdRef.current = requestId;
+        await loadChildren(requestId);
+      }
       setExpanded(true);
     } else {
       setExpanded(false);
@@ -113,6 +140,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
       children={children}
       loading={loading}
       refreshEvent={refreshEvent}
+      parentFolderId={parentFolderId}
     />
   );
 }
@@ -120,22 +148,36 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent }) {
 export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
   const [roots, setRoots] = useState([]);
   const [loading, setLoading] = useState(true);
+  const fetchIdRef = useRef(0);
 
   useEffect(() => {
+    const requestId = Date.now();
+    fetchIdRef.current = requestId;
     getTopics(null)
-      .then((data) => setRoots(data.items || []))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (requestId !== fetchIdRef.current) return;
+        setRoots(data.items || []);
+      })
+      .finally(() => {
+        if (requestId === fetchIdRef.current) setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
     if (!refreshEvent) return;
+
+    const requestId = refreshEvent.id;
+    fetchIdRef.current = requestId;
 
     const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
     if (removedId != null) {
       setRoots((prev) => pruneRemovedItems(prev, removedId));
     }
 
-    getTopics(null).then((data) => setRoots(data.items || []));
+    getTopics(null).then((data) => {
+      if (requestId !== fetchIdRef.current) return;
+      setRoots(data.items || []);
+    });
   }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId]);
 
   if (loading) return <p className="tree-muted">Loading…</p>;

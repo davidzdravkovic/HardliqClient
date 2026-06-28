@@ -143,17 +143,19 @@ export default function Dashboard() {
     };
   }, [selected?.id, isTopicSelected, refreshEvent?.id]);
 
-  function refresh(parentIds, { deletedTopicId, movedTopicId } = {}) {
+  function refresh(parentIds, { deletedTopicId, movedTopicId, resetTree = false } = {}) {
     const list = Array.isArray(parentIds) ? parentIds : [parentIds];
     const uniqueParentIds = list.filter(
       (id, index) => list.findIndex((candidate) => candidate === id) === index
     );
-    setRefreshEvent({
+    setRefreshEvent((prev) => ({
       id: Date.now(),
       parentIds: uniqueParentIds,
       deletedTopicId,
       movedTopicId,
-    });
+      resetTree,
+      treeVersion: resetTree ? Date.now() : (prev?.treeVersion ?? 0),
+    }));
   }
 
   function logout() {
@@ -219,7 +221,7 @@ export default function Dashboard() {
     const refreshParentId = selected?.parentId ?? null;
     const deletedTopicId = selected?.id;
     setSelected(null);
-    refresh(refreshParentId, { deletedTopicId });
+    refresh(refreshParentId, { deletedTopicId, resetTree: true });
   }
 
   async function handleRenameFolder(name) {
@@ -249,7 +251,7 @@ export default function Dashboard() {
     try {
       await patchTopic(selected.id, { moveParent: true, parentId });
       setSelected(null);
-      refresh([oldParentId, parentId], { movedTopicId: selected.id });
+      refresh([oldParentId, parentId], { movedTopicId: selected.id, resetTree: true });
     } catch (err) {
       setError(err.message);
       throw err;
@@ -263,11 +265,11 @@ export default function Dashboard() {
     refresh(selected.id);
   }
 
-  function handleTaskMoved(newParentId) {
-    const oldParentId = selected?.parentId ?? null;
+  function handleTaskMoved(newParentId, oldParentIdFromTask) {
+    const oldParentId = oldParentIdFromTask ?? selected?.parentId ?? null;
     const movedTopicId = selected?.id;
     setSelected(null);
-    refresh([oldParentId, newParentId], { movedTopicId });
+    refresh([oldParentId, newParentId], { movedTopicId, resetTree: true });
   }
 
   async function openTopicDeleteConfirm() {
@@ -309,7 +311,7 @@ export default function Dashboard() {
       await deleteTopic(deleteConfirm.topicId);
       setDeleteConfirm(null);
       setSelected(null);
-      refresh(refreshParentId, { deletedTopicId });
+      refresh(refreshParentId, { deletedTopicId, resetTree: true });
     } catch (err) {
       setError(err.message);
     } finally {
