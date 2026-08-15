@@ -83,11 +83,11 @@ export default function DashHeader({
             ref={searchInputRef}
             type="search"
             className="dash-search"
-            placeholder="Search topics or tasks…"
+            placeholder="Search folders or tasks…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={() => search.trim() && setOpen(true)}
-            aria-label="Search topics or tasks"
+            aria-label="Search folders or tasks"
             aria-expanded={open}
             aria-controls="dash-search-results"
             aria-keyshortcuts="/ Control+k"

@@ -20,13 +20,12 @@ export default function SideBar({ selectedId, onSelect, refreshEvent, onNewTopic
               />
             </svg>
           </span>
-          <span className="tree-all-text">All topics</span>
+          <span className="tree-all-text">All folders</span>
         </button>
       </div>
       <div className="sidebar-section sidebar-section-topics">
-        <p className="sidebar-title">Topics</p>
+        <p className="sidebar-title">Folders</p>
         <TopicTree
-          key={refreshEvent?.treeVersion ?? 0}
           selectedId={selectedId}
           onSelect={onSelect}
           refreshEvent={refreshEvent}
@@ -34,7 +33,7 @@ export default function SideBar({ selectedId, onSelect, refreshEvent, onNewTopic
       </div>
       <div className="sidebar-footer">
         <button type="button" className="sidebar-footer-btn" onClick={onNewTopic}>
-          + New topic
+          + New folder
         </button>
         <button type="button" className="sidebar-footer-btn sidebar-footer-btn-muted" disabled>
           <span className="sidebar-footer-icon" aria-hidden="true">

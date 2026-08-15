@@ -170,10 +170,10 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
   }, [topicId, refreshKey, period]);
 
   const title = isFolderView
-    ? (displayName || stats?.topicName || 'Folder')
-    : 'All topics';
+    ? (displayName || stats?.topicName || 'Topic')
+    : 'All folders';
   const subtitle = isFolderView
-    ? 'Tasks and progress in this folder'
+    ? 'Tasks and progress in this topic'
     : 'Overview of all your tasks and progress';
 
   const statsUnavailable = !loading && statsError && !stats;

@@ -4,7 +4,7 @@ import PaginationFooter from '../PaginationFooter';
 const SEARCH_PAGE_SIZE = 20;
 
 function formatPath(path) {
-  if (!path?.length) return 'All topics';
+  if (!path?.length) return 'All folders';
   return path.map((segment) => segment.name).join(' / ');
 }
 
@@ -27,7 +27,7 @@ export default function SearchResults({ query, onSelect, onClose }) {
       {error && <p className="dash-search-error">{error}</p>}
 
       {isActive && !error && items.length === 0 && !loading && !isWaiting && (
-        <p className="dash-search-hint">No topics or tasks found.</p>
+        <p className="dash-search-hint">No folders or tasks found.</p>
       )}
 
       {items.length > 0 && (
@@ -46,7 +46,7 @@ export default function SearchResults({ query, onSelect, onClose }) {
                 >
                   <span className="dash-search-item-top">
                     <span className={`dash-search-item-type dash-search-item-type-${item.type}`}>
-                      {item.type === 'task' ? 'Task' : 'Folder'}
+                      {item.type === 'task' ? 'Task' : 'Topic'}
                     </span>
                     <span className="dash-search-item-name">{item.name}</span>
                   </span>
@@ -59,6 +59,7 @@ export default function SearchResults({ query, onSelect, onClose }) {
             ))}
           </ul>
           <PaginationFooter
+            compact
             className="pagination-footer-search"
             shown={items.length}
             total={totalCount}

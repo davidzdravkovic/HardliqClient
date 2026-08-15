@@ -53,7 +53,7 @@ export default function RecentTopics({ refreshKey, onSelectTopic, onViewAll }) {
   if (loading) {
     return (
       <section className="recent-topics">
-        <h3 className="recent-topics-title">Recent topics</h3>
+        <h3 className="recent-topics-title">Recent folders</h3>
         <p className="recent-topics-muted">Loading…</p>
       </section>
     );
@@ -63,7 +63,7 @@ export default function RecentTopics({ refreshKey, onSelectTopic, onViewAll }) {
 
   return (
     <section className="recent-topics">
-      <h3 className="recent-topics-title">Recent topics</h3>
+      <h3 className="recent-topics-title">Recent folders</h3>
       <ul className="recent-topics-grid">
         {topics.map((topic) => {
           const stats = topic.stats;
@@ -106,7 +106,7 @@ export default function RecentTopics({ refreshKey, onSelectTopic, onViewAll }) {
         })}
       </ul>
       <button type="button" className="recent-topics-link" onClick={onViewAll}>
-        View all topics
+        View all folders
         <span aria-hidden="true">→</span>
       </button>
     </section>

@@ -2,10 +2,10 @@ const SHORTCUTS = [
   { keys: ['/', 'Ctrl', 'K'], label: 'Focus search' },
   { keys: ['Esc'], label: 'Close menus, search, or dialogs' },
   { keys: ['?'], label: 'Show keyboard shortcuts' },
-  { keys: ['↑', '↓'], label: 'Move selection in folder contents' },
-  { keys: ['Ctrl', '↑'], label: 'Move item up in folder contents' },
-  { keys: ['Ctrl', '↓'], label: 'Move item down in folder contents' },
-  { keys: ['Enter'], label: 'Open selected folder contents item' },
+  { keys: ['↑', '↓'], label: 'Move selection in topic contents' },
+  { keys: ['Alt', '↑'], label: 'Move item up in topic contents' },
+  { keys: ['Alt', '↓'], label: 'Move item down in topic contents' },
+  { keys: ['Enter'], label: 'Open selected topic contents item' },
 ];
 
 function KeyCombo({ keys }) {

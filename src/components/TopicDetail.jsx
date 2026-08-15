@@ -58,7 +58,7 @@ function summaryLabel(items, totalCount, stats) {
   const tasks = items.filter((item) => item.type === 'task').length;
   const parts = [];
 
-  if (folders > 0) parts.push(`${folders} folder${folders === 1 ? '' : 's'}`);
+  if (folders > 0) parts.push(`${folders} topic${folders === 1 ? '' : 's'}`);
   if (tasks > 0) parts.push(`${tasks} task${tasks === 1 ? '' : 's'}`);
 
   const countLine = parts.length > 0 ? parts.join(' · ') : 'Empty';
@@ -100,11 +100,22 @@ function ReorderButtons({ item, index, total, reorderingId, onReorder }) {
   );
 }
 
-function TaskRow({ item, onSelect, showReorder, index, total, reorderingId, onReorder, isFocused, rowRef }) {
+function TaskRow({
+  item,
+  onSelect,
+  showReorder,
+  index,
+  total,
+  reorderingId,
+  onReorder,
+  isFocused,
+  rowRef,
+  onFocusRow,
+}) {
   const hint = taskProgressHint(item);
 
   return (
-    <li ref={rowRef}>
+    <li ref={rowRef} onMouseEnter={() => onFocusRow?.(index)}>
       <div className={`folder-contents-row folder-contents-row-task${isFocused ? ' is-focused' : ''}`}>
         {showReorder && (
           <ReorderButtons
@@ -154,9 +165,10 @@ function FolderRow({
   onReorder,
   isFocused,
   rowRef,
+  onFocusRow,
 }) {
   return (
-    <li className="folder-contents-folder" ref={rowRef}>
+    <li className="folder-contents-folder" ref={rowRef} onMouseEnter={() => onFocusRow?.(index)}>
       <div className={`folder-contents-row folder-contents-row-folder${expanded ? ' is-expanded' : ''}${isFocused ? ' is-focused' : ''}`}>
         {showReorder && (
           <ReorderButtons
@@ -182,7 +194,7 @@ function FolderRow({
         </span>
         <span className="folder-contents-body">
           <span className="folder-contents-name">{item.name}</span>
-          <span className="folder-contents-meta">Folder</span>
+          <span className="folder-contents-meta">Topic</span>
         </span>
         <button
           type="button"
@@ -198,7 +210,7 @@ function FolderRow({
           {children === null ? (
             <li className="folder-contents-muted folder-contents-nested-status">Loading…</li>
           ) : children.length === 0 ? (
-            <li className="folder-contents-muted folder-contents-nested-status">Empty folder</li>
+            <li className="folder-contents-muted folder-contents-nested-status">Empty topic</li>
           ) : (
             children.map((child) => (
               <ContentsItem
@@ -234,6 +246,7 @@ function ContentsItem({
   onReorder,
   isFocused = false,
   rowRef,
+  onFocusRow,
 }) {
   if (item.type === 'task') {
     return (
@@ -247,6 +260,7 @@ function ContentsItem({
         onReorder={onReorder}
         isFocused={isFocused}
         rowRef={rowRef}
+        onFocusRow={onFocusRow}
       />
     );
   }
@@ -275,6 +289,7 @@ function ContentsItem({
       onReorder={onReorder}
       isFocused={isFocused}
       rowRef={rowRef}
+      onFocusRow={onFocusRow}
     />
   );
 }
@@ -317,10 +332,15 @@ export default function TopicDetail({
     try {
       const data = await getTopics(folderId, { page, pageSize: CONTENTS_PAGE_SIZE });
       const items = buildRootContentsList(data.items || []);
-      setRootItems((prev) => (append ? [...prev, ...items] : items));
+      let merged = items;
+      setRootItems((prev) => {
+        merged = append ? [...prev, ...items] : items;
+        return merged;
+      });
       setTotalCount(data.totalCount ?? items.length);
       setHasMore(Boolean(data.hasMore));
       setRootPage(page);
+      return merged;
     } catch (err) {
       if (!append) {
         setRootItems([]);
@@ -328,6 +348,7 @@ export default function TopicDetail({
         setHasMore(false);
       }
       onError?.(err.message);
+      return null;
     } finally {
       if (append) setLoadingMore(false);
       else setListLoading(false);
@@ -375,22 +396,31 @@ export default function TopicDetail({
     setExpandedIds((prev) => new Set(prev).add(id));
   }
 
-  async function handleReorder(item, direction) {
+  async function reloadLoadedPages(fromPage) {
+    let merged = await loadRootPage(1);
+    for (let page = 2; page <= fromPage; page += 1) {
+      merged = await loadRootPage(page, { append: true });
+    }
+    return merged;
+  }
+
+  const handleReorder = useCallback(async (item, direction) => {
     setReorderingId(item.id);
+    const pagesLoaded = rootPage;
     try {
       await patchTopic(item.id, { move: direction });
-      await loadRootPage(1);
+      const merged = await reloadLoadedPages(pagesLoaded);
       onContentsChanged?.();
-      setFocusedIndex((prev) => {
-        if (direction === 'up') return Math.max(0, prev - 1);
-        return Math.min(rootItems.length - 1, prev + 1);
-      });
+      if (merged) {
+        const nextIndex = merged.findIndex((entry) => entry.id === item.id);
+        if (nextIndex >= 0) setFocusedIndex(nextIndex);
+      }
     } catch (err) {
       onError?.(err.message);
     } finally {
       setReorderingId(null);
     }
-  }
+  }, [rootPage, loadRootPage, onContentsChanged, onError]);
 
   useEffect(() => {
     if (!open) {
@@ -415,41 +445,52 @@ export default function TopicDetail({
     rowRefs.current[focusedIndex]?.scrollIntoView({ block: 'nearest' });
   }, [focusedIndex]);
 
-  function handlePanelKeyDown(event) {
-    if (!rootItems.length) return;
+  useEffect(() => {
+    if (!open || rootItems.length === 0) return undefined;
 
-    const item = rootItems[focusedIndex];
-    if (!item) return;
+    function handlePanelKeyDown(event) {
+      if (!panelRef.current) return;
+      const inPanel = panelRef.current.contains(document.activeElement)
+        || document.activeElement === panelRef.current;
+      if (!inPanel) return;
 
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setFocusedIndex((prev) => Math.min(prev + 1, rootItems.length - 1));
-      return;
+      const item = rootItems[focusedIndex];
+      if (!item) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setFocusedIndex((prev) => Math.min(prev + 1, rootItems.length - 1));
+        return;
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setFocusedIndex((prev) => Math.max(prev - 1, 0));
+        return;
+      }
+
+      const reorderModifier = event.altKey || event.ctrlKey;
+      if (reorderModifier && event.key === 'ArrowDown' && focusedIndex < rootItems.length - 1) {
+        event.preventDefault();
+        handleReorder(item, 'down');
+        return;
+      }
+
+      if (reorderModifier && event.key === 'ArrowUp' && focusedIndex > 0) {
+        event.preventDefault();
+        handleReorder(item, 'up');
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        onSelectChild?.(item);
+      }
     }
 
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setFocusedIndex((prev) => Math.max(prev - 1, 0));
-      return;
-    }
-
-    if (event.ctrlKey && event.key === 'ArrowDown' && focusedIndex < rootItems.length - 1) {
-      event.preventDefault();
-      handleReorder(item, 'down');
-      return;
-    }
-
-    if (event.ctrlKey && event.key === 'ArrowUp' && focusedIndex > 0) {
-      event.preventDefault();
-      handleReorder(item, 'up');
-      return;
-    }
-
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      onSelectChild?.(item);
-    }
-  }
+    document.addEventListener('keydown', handlePanelKeyDown, true);
+    return () => document.removeEventListener('keydown', handlePanelKeyDown, true);
+  }, [open, rootItems, focusedIndex, handleReorder, onSelectChild]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -501,19 +542,15 @@ export default function TopicDetail({
       ref={panelRef}
       className={`folder-contents-panel${isMobileSheet ? ' folder-mobile-sheet' : ''}`}
       role="region"
-      aria-label="Folder contents"
+      aria-label="Topic contents"
       tabIndex={-1}
-      onKeyDown={handlePanelKeyDown}
     >
       {listLoading && rootItems.length === 0 ? (
         <p className="folder-contents-muted">Loading…</p>
       ) : rootItems.length === 0 ? (
-        <p className="folder-workspace-empty">Nothing in this folder yet.</p>
+        <p className="folder-workspace-empty">Nothing in this topic yet.</p>
       ) : (
         <>
-          <p className="folder-contents-kbd-hint">
-            <kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Ctrl</kbd><kbd>↑</kbd><kbd>↓</kbd> reorder
-          </p>
           <ul className="folder-contents-list">
             {rootItems.map((item, index) => (
               <ContentsItem
@@ -530,6 +567,7 @@ export default function TopicDetail({
                 reorderingId={reorderingId}
                 onReorder={handleReorder}
                 isFocused={focusedIndex === index}
+                onFocusRow={setFocusedIndex}
                 rowRef={(el) => {
                   rowRefs.current[index] = el;
                 }}
@@ -537,6 +575,7 @@ export default function TopicDetail({
             ))}
           </ul>
           <PaginationFooter
+            compact
             shown={rootItems.length}
             total={totalCount}
             pageSize={CONTENTS_PAGE_SIZE}

@@ -1,0 +1,64 @@
+---
+description: VPS deployment constraints for TaskManager on chat-prod
+alwaysApply: true
+---
+
+# TaskManager VPS deployment (chat-prod)
+
+Server: `root@89.167.92.11` (chat-prod).
+
+- **Port 80 is used by the chat app** — TaskManager must not bind to port 80.
+- **Backend:** Docker Compose in `~/TaskManager/deploy` — services `db` + `api` only. API exposed as `127.0.0.1:5157:8080`.
+- **Frontend:** NOT the compose `web` service. Build React on the host, copy static files to `/var/www/taskmanager/`, served by **host nginx** (e.g. port 8080).
+- **Build command:**
+  ```bash
+  docker run --rm -v ~/TaskManagerReact:/app -w /app node:22-alpine \
+    sh -c "npm ci && VITE_API_URL=/api npm run build"
+  sudo mkdir -p /var/www/taskmanager
+  sudo cp -r ~/TaskManagerReact/dist/* /var/www/taskmanager/
+  ```
+- **`VITE_API_URL=/api`** requires host nginx to proxy `/api/` → `http://127.0.0.1:5157/`.
+- **`PUBLIC_ORIGIN`** in `~/TaskManager/deploy/.env` must match the browser URL exactly (e.g. `http://89.167.92.11:8080`).
+- **Update flow:** `git pull` both repos → `docker compose --env-file .env up -d --build` (api) → rebuild React → `cp` to `/var/www/taskmanager/`.
+
+## Standard commit + deploy workflow
+
+### Local — push backend (`C:\Users\User\TaskManager`)
+
+```powershell
+cd C:\Users\User\TaskManager
+git add Controllers/TopicsController.cs Dto/RequestsDto/PatchTopicRequest.cs
+git commit -m "Fix move-only PATCH validation for topic updates."
+git push
+```
+
+Adjust `git add` paths and commit message per change.
+
+### Local — push frontend (`C:\Users\User\TaskManagerReact`)
+
+```powershell
+cd C:\Users\User\TaskManagerReact
+git add src/pages/Dashboard.jsx src/components/sidebar/TopicTree.jsx
+git commit -m "Fix sidebar tree sync after move and delete."
+git push
+```
+
+Adjust `git add` paths and commit message per change.
+
+### Server — deploy backend (`root@89.167.92.11`)
+
+```bash
+cd ~/TaskManager && git pull
+cd ~/TaskManager/deploy && docker compose --env-file .env up -d --build api
+```
+
+### Server — deploy frontend
+
+```bash
+cd ~/TaskManagerReact && git pull
+docker run --rm -v ~/TaskManagerReact:/app -w /app node:22-alpine \
+  sh -c "npm ci && VITE_API_URL=/api npm run build"
+sudo cp -r ~/TaskManagerReact/dist/* /var/www/taskmanager/
+```
+
+App URL: `http://89.167.92.11:8080`

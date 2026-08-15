@@ -2,9 +2,9 @@ export default function CreateTopicCard({ topicName, onTopicNameChange, onSubmit
   return (
     <section className="create-topic-card">
       <div className="create-topic-card-body">
-        <h3 className="create-topic-card-title">Pick a topic to get started</h3>
+        <h3 className="create-topic-card-title">Pick a folder to get started</h3>
         <p className="create-topic-card-sub">
-          Create a top-level topic for work, home, or anything you are planning.
+          Create a top-level folder for work, home, or anything you are planning.
         </p>
         <form className="create-topic-card-form" onSubmit={onSubmit}>
           <input
@@ -15,7 +15,7 @@ export default function CreateTopicCard({ topicName, onTopicNameChange, onSubmit
             onChange={(e) => onTopicNameChange(e.target.value)}
           />
           <button type="submit" className="btn btn-primary">
-            Create topic
+            Create folder
           </button>
         </form>
       </div>

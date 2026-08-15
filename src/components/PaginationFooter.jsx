@@ -6,13 +6,35 @@ export default function PaginationFooter({
   hasMore = false,
   onLoadMore,
   className = '',
+  compact = false,
 }) {
   if (!total || total <= 0) return null;
 
   const safeShown = Math.min(shown, total);
-  const percent = Math.min(100, Math.round((safeShown / total) * 100));
   const remaining = Math.max(0, total - safeShown);
   const nextBatch = Math.min(pageSize, remaining);
+
+  if (compact) {
+    if (!hasMore) return null;
+
+    return (
+      <div className={`pagination-footer pagination-footer-compact${className ? ` ${className}` : ''}`}>
+        <span className="pagination-footer-compact-meta">
+          {safeShown} of {total} loaded
+        </span>
+        <button
+          type="button"
+          className="pagination-footer-btn pagination-footer-btn-compact"
+          onClick={onLoadMore}
+          disabled={loading}
+        >
+          {loading ? 'Loading…' : `Load ${nextBatch} more`}
+        </button>
+      </div>
+    );
+  }
+
+  const percent = Math.min(100, Math.round((safeShown / total) * 100));
 
   return (
     <div className={`pagination-footer${className ? ` ${className}` : ''}`}>
