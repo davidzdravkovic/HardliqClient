@@ -2,46 +2,56 @@ import { useEffect, useState } from 'react';
 import WorkspaceStats from './WorkspaceStats';
 import TopicDetail from './TopicDetail';
 import FolderOptions from './FolderOptions';
+import ConfirmDialog from './ConfirmDialog';
+import { useFolderMutations } from '../hooks/useFolderMutations';
 
 export default function FolderWorkspace({
   folderId,
   folderName,
-  refreshKey,
-  directChildren,
-  folderTasks,
-  folderStats,
-  childrenLoading,
-  childType,
-  addMode,
-  onAddModeChange,
-  topicName,
-  onTopicNameChange,
-  onCreateTopic,
-  taskName,
-  onTaskNameChange,
-  taskDesc,
-  onTaskDescChange,
-  onCreateTask,
-  onRenameFolder,
-  renaming,
-  onMoveFolder,
-  moving,
   folderParentId = null,
+  refreshKey,
+  refresh,
   onSelectChild,
-  onContentsChanged,
   onError,
-  onDeleteClick,
-  deleting,
-  onEmptyClick,
-  emptying,
-  registerEscape,
+  onFolderRenamed,
+  onLeaveFolder,
 }) {
   const [contentsOpen, setContentsOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [childType, setChildType] = useState(null);
+  const [childrenLoading, setChildrenLoading] = useState(true);
+  const [addMode, setAddMode] = useState(null);
+
+  const {
+    renaming,
+    moving,
+    deleting,
+    emptying,
+    handleCreateTopic,
+    handleCreateTask,
+    handleRenameFolder,
+    handleMoveFolder,
+    handleContentsChanged,
+    openTopicDeleteConfirm,
+    openEmptyFolderConfirm,
+    deleteDialog,
+    emptyDialog,
+  } = useFolderMutations({
+    folderId,
+    folderName,
+    folderParentId,
+    refresh,
+    onError,
+    onFolderRenamed,
+    onLeaveFolder,
+  });
 
   useEffect(() => {
     setContentsOpen(false);
     setOptionsOpen(false);
+    setChildType(null);
+    setChildrenLoading(true);
+    setAddMode(null);
   }, [folderId]);
 
   useEffect(() => {
@@ -57,14 +67,6 @@ export default function FolderWorkspace({
       document.body.style.overflow = prevOverflow;
     };
   }, [contentsOpen, optionsOpen]);
-
-  useEffect(() => {
-    if (!optionsOpen) return undefined;
-    return registerEscape?.(() => {
-      setOptionsOpen(false);
-      return true;
-    });
-  }, [optionsOpen, registerEscape]);
 
   function closeMenus() {
     setContentsOpen(false);
@@ -83,73 +85,91 @@ export default function FolderWorkspace({
     if (next) setContentsOpen(false);
   }
 
-  const topicProps = {
-    folderId,
-    folderTasks,
-    stats: folderStats,
-    refreshKey,
-    onSelectChild,
-    onContentsChanged,
-    onError,
-  };
-
-  const optionsProps = {
-    folderName,
-    folderId,
-    childType,
-    childrenLoading,
-    addMode,
-    onAddModeChange,
-    topicName,
-    onTopicNameChange,
-    onCreateTopic,
-    taskName,
-    onTaskNameChange,
-    taskDesc,
-    onTaskDescChange,
-    onCreateTask,
-    onRenameFolder,
-    renaming,
-    onMoveFolder,
-    moving,
-    folderParentId,
-    onDeleteClick,
-    deleting,
-    onEmptyClick,
-    emptying,
-  };
-
   return (
-    <WorkspaceStats
-      topicId={folderId}
-      displayName={folderName}
-      refreshKey={refreshKey}
-      headerMenu={
-        <FolderOptions
-          {...optionsProps}
-          section="menu"
-          open={optionsOpen}
-          onOpenChange={handleOptionsOpen}
-        />
-      }
-    >
-      {(contentsOpen || optionsOpen) && (
-        <button
-          type="button"
-          className="folder-mobile-backdrop"
-          aria-label="Close menu"
-          onClick={closeMenus}
-        />
-      )}
-      <div className="folder-workspace-controls">
-        <TopicDetail
-          {...topicProps}
-          section="menu"
-          open={contentsOpen}
-          onOpenChange={handleContentsOpen}
-          registerEscape={registerEscape}
-        />
-      </div>
-    </WorkspaceStats>
+    <>
+      <WorkspaceStats
+        topicId={folderId}
+        displayName={folderName}
+        refreshKey={refreshKey}
+        headerMenu={
+          <FolderOptions
+            folderName={folderName}
+            folderId={folderId}
+            folderParentId={folderParentId}
+            childType={childType}
+            childrenLoading={childrenLoading}
+            addMode={addMode}
+            onAddModeChange={setAddMode}
+            onCreateTopic={handleCreateTopic}
+            onCreateTask={handleCreateTask}
+            onRenameFolder={handleRenameFolder}
+            renaming={renaming}
+            onMoveFolder={handleMoveFolder}
+            moving={moving}
+            onDeleteClick={openTopicDeleteConfirm}
+            deleting={deleting}
+            onEmptyClick={openEmptyFolderConfirm}
+            emptying={emptying}
+            section="menu"
+            open={optionsOpen}
+            onOpenChange={handleOptionsOpen}
+          />
+        }
+      >
+        {(stats) => (
+          <>
+            {(contentsOpen || optionsOpen) && (
+              <button
+                type="button"
+                className="folder-mobile-backdrop"
+                aria-label="Close menu"
+                onClick={closeMenus}
+              />
+            )}
+            <div className="folder-workspace-controls">
+              <TopicDetail
+                folderId={folderId}
+                refreshKey={refreshKey}
+                onSelectChild={onSelectChild}
+                onContentsChanged={handleContentsChanged}
+                onError={onError}
+                onChildTypeChange={setChildType}
+                onListLoadingChange={setChildrenLoading}
+                stats={stats}
+                section="menu"
+                open={contentsOpen}
+                onOpenChange={handleContentsOpen}
+              />
+            </div>
+          </>
+        )}
+      </WorkspaceStats>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="Delete topic"
+        message={deleteDialog.message}
+        confirmLabel="Delete topic"
+        cancelLabel="Cancel"
+        loading={deleteDialog.loading}
+        confirmDisabled={deleteDialog.confirmDisabled}
+        danger
+        onConfirm={deleteDialog.onConfirm}
+        onCancel={deleteDialog.onCancel}
+      />
+
+      <ConfirmDialog
+        open={emptyDialog.open}
+        title="Empty topic"
+        message={emptyDialog.message}
+        confirmLabel="Empty topic"
+        cancelLabel="Cancel"
+        loading={emptyDialog.loading}
+        confirmDisabled={emptyDialog.confirmDisabled}
+        danger
+        onConfirm={emptyDialog.onConfirm}
+        onCancel={emptyDialog.onCancel}
+      />
+    </>
   );
 }

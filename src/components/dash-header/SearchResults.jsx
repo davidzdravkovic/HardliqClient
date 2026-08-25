@@ -9,8 +9,7 @@ function formatPath(path) {
 }
 
 export default function SearchResults({ query, onSelect, onClose }) {
-  const { items, loading, error, hasMore, totalCount, loadMore, isActive, isWaiting, minQueryLength } =
-    useTopicSearch(query);
+  const { items, loading, error, hasMore, totalCount, loadMore, isActive, isWaiting, minQueryLength } = useTopicSearch(query);
 
   if (!query.trim()) return null;
 

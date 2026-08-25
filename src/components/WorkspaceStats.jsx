@@ -200,6 +200,8 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
     </aside>
   );
 
+  const folderBody = typeof children === 'function' ? children(stats) : children;
+
   if (loading) {
     if (isFolderView) {
       return (
@@ -211,7 +213,7 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
                 <p>Loading…</p>
               </div>
             </header>
-            {children}
+            {folderBody}
           </section>
         </div>
       );
@@ -251,7 +253,7 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
               <div className="folder-workspace-header-actions">{headerMenu}</div>
             )}
           </header>
-          {children}
+          {folderBody}
         </section>
       </div>
     );
@@ -292,7 +294,7 @@ export default function WorkspaceStats({ topicId, displayName, refreshKey, child
               <div className="folder-workspace-header-actions">{headerMenu}</div>
             )}
           </header>
-          {children}
+          {folderBody}
         </section>
       </div>
     );

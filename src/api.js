@@ -28,7 +28,7 @@ function logoutExpiredSession() {
   }
 }
 
-//Compose a http response and returns a request 
+//Compose a http request and returns a response 
 async function request(url, options = {}, { useAuth = true } = {}) {
 
   const token = useAuth ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
@@ -78,13 +78,11 @@ export function login(username, password) {
   );
 }
 
-export function getTopics(parentId, { page = 1, pageSize = 20 } = {}) {
-  const params = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-  });
+export function getTopics(parentId) {
+  const params = new URLSearchParams();
   if (parentId != null) params.set('parentId', String(parentId));
-  return request(`/topics?${params}`);
+const query = params.toString();
+return request(`/topics${query ? `?${query}` : ''}`);
 }
 
 export function getFolderTasks(topicId) {

@@ -19,19 +19,13 @@ export default function ConfirmDialog({
 
     cancelRef.current?.focus();
 
-    function onKeyDown(e) {
-      if (e.key === 'Escape' && !loading && !confirmDisabled) onCancel();
-    }
-
-    document.addEventListener('keydown', onKeyDown);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, loading, confirmDisabled, onCancel]);
+  }, [open]);
 
   if (!open) return null;
 

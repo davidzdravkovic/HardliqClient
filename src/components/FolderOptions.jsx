@@ -87,13 +87,7 @@ export default function FolderOptions({
   childrenLoading,
   addMode,
   onAddModeChange,
-  topicName,
-  onTopicNameChange,
   onCreateTopic,
-  taskName,
-  onTaskNameChange,
-  taskDesc,
-  onTaskDescChange,
   onCreateTask,
   onRenameFolder,
   renaming,
@@ -110,6 +104,9 @@ export default function FolderOptions({
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [view, setView] = useState('menu');
+  const [topicName, setTopicName] = useState('');
+  const [taskName, setTaskName] = useState('');
+  const [taskDesc, setTaskDesc] = useState('');
   const [renameName, setRenameName] = useState(folderName);
   const menuRef = useRef(null);
   const panelRef = useRef(null);
@@ -123,11 +120,17 @@ export default function FolderOptions({
       setView('menu');
     }
     setRenameName(folderName);
+    setTopicName('');
+    setTaskName('');
+    setTaskDesc('');
   }, [folderId, folderName, isControlled]);
 
   useEffect(() => {
     if (!open) {
       setView('menu');
+      setTopicName('');
+      setTaskName('');
+      setTaskDesc('');
       onAddModeChange?.(null);
     }
   }, [open, onAddModeChange]);
@@ -142,15 +145,9 @@ export default function FolderOptions({
       setOpen(false);
     }
 
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-
     document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [open]);
 
@@ -166,6 +163,31 @@ export default function FolderOptions({
   function openAddFolder() {
     setView('topic');
     onAddModeChange?.('topic');
+  }
+
+  async function handleCreateTopicSubmit(e) {
+    e.preventDefault();
+    if (!topicName.trim()) return;
+
+    try {
+      await onCreateTopic(topicName.trim());
+      setTopicName('');
+    } catch {
+      // Dashboard shows the error banner.
+    }
+  }
+
+  async function handleCreateTaskSubmit(e) {
+    e.preventDefault();
+    if (!taskName.trim() || !taskDesc.trim()) return;
+
+    try {
+      await onCreateTask(taskName.trim(), taskDesc.trim());
+      setTaskName('');
+      setTaskDesc('');
+    } catch {
+      // Dashboard shows the error banner.
+    }
   }
 
   function openAddTask() {
@@ -305,13 +327,13 @@ export default function FolderOptions({
   const topicForm = (
     <div className="folder-options-form">
       <PanelHeader title="New topic" onBack={() => setView('menu')} />
-      <form className="add-form add-form-folder add-inline" onSubmit={onCreateTopic}>
+      <form className="add-form add-form-folder add-inline" onSubmit={handleCreateTopicSubmit}>
         <div className="add-form-row">
           <input
             className="field"
             placeholder="Topic name"
             value={topicName}
-            onChange={(e) => onTopicNameChange(e.target.value)}
+            onChange={(e) => setTopicName(e.target.value)}
             autoFocus
           />
           <button type="submit" className="btn btn-folder btn-sm">Add</button>
@@ -323,12 +345,12 @@ export default function FolderOptions({
   const taskForm = (
     <div className="folder-options-form">
       <PanelHeader title="New task" onBack={() => setView('menu')} />
-      <form className="add-form add-form-task" onSubmit={onCreateTask}>
+      <form className="add-form add-form-task" onSubmit={handleCreateTaskSubmit}>
         <input
           className="field"
           placeholder="What needs doing?"
           value={taskName}
-          onChange={(e) => onTaskNameChange(e.target.value)}
+          onChange={(e) => setTaskName(e.target.value)}
           autoFocus
         />
         <textarea
@@ -336,7 +358,7 @@ export default function FolderOptions({
           placeholder="What's the task about?"
           rows={2}
           value={taskDesc}
-          onChange={(e) => onTaskDescChange(e.target.value)}
+          onChange={(e) => setTaskDesc(e.target.value)}
         />
         <button type="submit" className="btn btn-primary btn-sm add-task-submit">
           Add task

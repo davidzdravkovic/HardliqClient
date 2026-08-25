@@ -2,29 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import UserMenu from './UserMenu';
 import SearchResults from './SearchResults';
 
-export default function DashHeader({
-  search,
-  onSearchChange,
-  onSearchSelect,
-  onLogout,
-  onMenuClick, /* MOBILE-V1 */
-  searchInputRef,
-  registerEscape,
-}) {
+export default function DashHeader({search, onSearchChange,onSearchSelect, onLogout,onMenuClick, /* MOBILE-V1 */}) {
+
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
   useEffect(() => {
     setOpen(Boolean(search.trim()));
   }, [search]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    return registerEscape?.(() => {
-      setOpen(false);
-      return true;
-    });
-  }, [open, registerEscape]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -35,18 +20,10 @@ export default function DashHeader({
       }
     }
 
-    function onKeyDown(e) {
-      if (e.key === 'Escape') {
-        setOpen(false);
-      }
-    }
-
     document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
 
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
     };
   }, [open]);
 
@@ -80,7 +57,6 @@ export default function DashHeader({
             </svg>
           </span>
           <input
-            ref={searchInputRef}
             type="search"
             className="dash-search"
             placeholder="Search folders or tasks…"
@@ -90,12 +66,8 @@ export default function DashHeader({
             aria-label="Search folders or tasks"
             aria-expanded={open}
             aria-controls="dash-search-results"
-            aria-keyshortcuts="/ Control+k"
             autoComplete="off"
           />
-          <span className="dash-search-kbd" aria-hidden="true">
-            <kbd>/</kbd>
-          </span>
         </div>
 
         {open && (

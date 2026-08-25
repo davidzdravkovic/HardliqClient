@@ -89,7 +89,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
   const [loading, setLoading] = useState(false);
   const fetchIdRef = useRef(0);
 
-  const loadChildren = useCallback(async (requestId) => {
+  const loadChildren = (async (requestId) => {
     setLoading(true);
     try {
       const data = await getTopics(node.id);
@@ -98,7 +98,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
     } finally {
       if (requestId === fetchIdRef.current) setLoading(false);
     }
-  }, [node.id]);
+  });
 
   useEffect(() => {
     if (!refreshEvent) return;
@@ -114,7 +114,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
       setExpanded(true);
       loadChildren(refreshEvent.id);
     }
-  }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId, node.id, loadChildren]);
+  }, [refreshEvent?.id]);
 
   async function handleExpandToggle() {
     if (expanded) {
@@ -146,7 +146,7 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
   );
 }
 
-export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
+export default function TopicTree({selectedId, onSelect, refreshEvent }) {
   const [roots, setRoots] = useState([]);
   const [loading, setLoading] = useState(true);
   const fetchIdRef = useRef(0);
@@ -156,6 +156,7 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
     const requestId = refreshEvent?.id ?? Date.now();
     fetchIdRef.current = requestId;
 
+  //Optimistic UI gets overwritten by the getTopics anyway if the topic has no parent
     const removedId = refreshEvent?.movedTopicId ?? refreshEvent?.deletedTopicId;
     if (removedId != null) {
       setRoots((prev) => pruneRemovedItems(prev, removedId));
@@ -163,8 +164,7 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
 
     const needsRootReload =
       refreshEvent == null ||
-      refreshEvent.parentIds?.some((id) => id == null) ||
-      refreshEvent.movedTopicId != null;
+      refreshEvent.parentIds?.some((id) => id == null) 
 
     if (!needsRootReload) return;
 
@@ -179,8 +179,9 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
       .finally(() => {
         if (requestId === fetchIdRef.current) setLoading(false);
       });
-  }, [refreshEvent?.id, refreshEvent?.movedTopicId, refreshEvent?.deletedTopicId]);
+  }, [refreshEvent?.id]);
 
+  // hasRoots is for the initial fetch only to show the spinner later direct swap from roots(old) -> roots(new)
   if (loading && !hasRootsRef.current) return <p className="tree-muted">Loading…</p>;
 
   return (

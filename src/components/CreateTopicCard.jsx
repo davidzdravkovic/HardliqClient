@@ -1,4 +1,20 @@
-export default function CreateTopicCard({ topicName, onTopicNameChange, onSubmit, inputRef }) {
+import { useState } from 'react';
+
+export default function CreateTopicCard({ onSubmit, inputRef }) {
+  const [topicName, setTopicName] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!topicName.trim()) return;
+
+    try {
+      await onSubmit(topicName.trim());
+      setTopicName('');
+    } catch {
+      // Dashboard shows the error banner.
+    }
+  }
+
   return (
     <section className="create-topic-card">
       <div className="create-topic-card-body">
@@ -6,13 +22,13 @@ export default function CreateTopicCard({ topicName, onTopicNameChange, onSubmit
         <p className="create-topic-card-sub">
           Create a top-level folder for work, home, or anything you are planning.
         </p>
-        <form className="create-topic-card-form" onSubmit={onSubmit}>
+        <form className="create-topic-card-form" onSubmit={handleSubmit}>
           <input
             ref={inputRef}
             className="field"
             placeholder="Work, Home, Side project…"
             value={topicName}
-            onChange={(e) => onTopicNameChange(e.target.value)}
+            onChange={(e) => setTopicName(e.target.value)}
           />
           <button type="submit" className="btn btn-primary">
             Create folder

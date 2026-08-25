@@ -13,16 +13,10 @@ export default function UserMenu({ onLogout, compact = false }) {
       if (!rootRef.current?.contains(e.target)) setOpen(false);
     }
 
-    function onKeyDown(e) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-
     document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
 
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
     };
   }, [open]);
 

@@ -301,10 +301,11 @@ export default function TopicDetail({
   onSelectChild,
   onContentsChanged,
   onError,
+  onChildTypeChange,
+  onListLoadingChange,
   section = 'menu',
   open: openProp,
   onOpenChange,
-  registerEscape,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState(() => new Set());
@@ -327,7 +328,10 @@ export default function TopicDetail({
 
   const loadRootPage = useCallback(async (page, { append = false } = {}) => {
     if (append) setLoadingMore(true);
-    else setListLoading(true);
+    else {
+      setListLoading(true);
+      onListLoadingChange?.(true);
+    }
 
     try {
       const data = await getTopics(folderId, { page, pageSize: CONTENTS_PAGE_SIZE });
@@ -340,20 +344,27 @@ export default function TopicDetail({
       setTotalCount(data.totalCount ?? items.length);
       setHasMore(Boolean(data.hasMore));
       setRootPage(page);
+      if (!append) {
+        onChildTypeChange?.(items.length > 0 ? data.childType ?? null : null);
+      }
       return merged;
     } catch (err) {
       if (!append) {
         setRootItems([]);
         setTotalCount(0);
         setHasMore(false);
+        onChildTypeChange?.(null);
       }
       onError?.(err.message);
       return null;
     } finally {
       if (append) setLoadingMore(false);
-      else setListLoading(false);
+      else {
+        setListLoading(false);
+        onListLoadingChange?.(false);
+      }
     }
-  }, [folderId, onError]);
+  }, [folderId, onError, onChildTypeChange, onListLoadingChange]);
 
   useEffect(() => {
     if (!isControlled) setInternalOpen(false);
@@ -429,11 +440,7 @@ export default function TopicDetail({
     }
 
     panelRef.current?.focus({ preventScroll: true });
-    return registerEscape?.(() => {
-      setOpen(false);
-      return true;
-    });
-  }, [open, registerEscape]);
+  }, [open]);
 
   useEffect(() => {
     if (focusedIndex >= rootItems.length) {
