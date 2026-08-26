@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, register } from '../api';
@@ -11,7 +11,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -21,7 +21,7 @@ export default function Register() {
       localStorage.setItem(AUTH_USERNAME_KEY, data.username);
       navigate('/app');
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }

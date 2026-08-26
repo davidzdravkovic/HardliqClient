@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Logo from '../components/Logo';
 import { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, login } from '../api';
@@ -18,7 +18,7 @@ export default function Login() {
     setSearchParams(searchParams, { replace: true });
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -28,7 +28,7 @@ export default function Login() {
       localStorage.setItem(AUTH_USERNAME_KEY, data.username);
       navigate('/app');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
