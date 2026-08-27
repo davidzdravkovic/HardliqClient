@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getTaskStats } from '../api';
-import { queryKeys } from '../query/keys';
+import { useTaskStats } from '../api/hooks/stats';
+
 
 function getSinceForPeriod(period) {
   const now = new Date();
@@ -153,14 +152,8 @@ export default function WorkspaceStats({ topicId, displayName, children, headerM
   const isFolderView = topicId != null;
   const since = getSinceForPeriod(period);
 
-  const {
-    data: stats = null,
-    isPending: loading,
-    isError: statsError,
-  } = useQuery({
-    queryKey: queryKeys.stats.detail(topicId, since),
-    queryFn: () => getTaskStats(topicId, since),
-  });
+  const { data: stats = null, isPending: loading, isError: statsError } = useTaskStats(topicId, since);
+
 
   const title = isFolderView
     ? (displayName || stats?.topicName || 'Topic')

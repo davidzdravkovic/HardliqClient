@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { getTaskStats, getTopics } from '../api';
-import { queryKeys } from '../query/keys';
+import { useRecentTopics } from '../api/hooks/recent';
 
 function MiniStat({ type, count }) {
   const colors = {
@@ -16,26 +14,8 @@ function MiniStat({ type, count }) {
   );
 }
 
-async function fetchRecentTopics() {
-  const data = await getTopics(null);
-  const roots = (data.items || []).filter((t) => t.type === 'topic').slice(0, 4);
-  return Promise.all(
-    roots.map(async (topic) => {
-      try {
-        const stats = await getTaskStats(topic.id);
-        return { ...topic, stats };
-      } catch {
-        return { ...topic, stats: null };
-      }
-    }),
-  );
-}
-
 export default function RecentTopics({ onSelectTopic, onViewAll }) {
-  const { data: topics = [], isPending: loading } = useQuery({
-    queryKey: queryKeys.topics.recent,
-    queryFn: fetchRecentTopics,
-  });
+  const { data: topics = [], isPending: loading } = useRecentTopics();
 
   if (loading) {
     return (

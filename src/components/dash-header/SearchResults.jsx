@@ -1,4 +1,4 @@
-import useTopicSearch from './useTopicSearch';
+import { useTopicSearch } from '../../api/hooks/search';
 import PaginationFooter from '../PaginationFooter';
 
 const SEARCH_PAGE_SIZE = 20;

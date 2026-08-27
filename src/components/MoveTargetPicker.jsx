@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { searchTopics } from '../api';
+import { useState } from 'react';
+import { useSearchTopics } from '../api/hooks/search';
 
 function formatPath(path) {
   if (!path?.length) return 'All folders';
@@ -17,47 +17,7 @@ export default function MoveTargetPicker({
   compact = false,
 }) {
   const [query, setQuery] = useState('');
-  const [items, setItems] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      setItems([]);
-      setError('');
-      return undefined;
-    }
-
-    let cancelled = false;
-    setSearching(true);
-    setError('');
-
-    const timer = setTimeout(() => {
-      searchTopics(trimmed, 1, 20)
-        .then((data) => {
-          if (cancelled) return;
-          const folders = (data.items || []).filter(
-            (item) => item.type === 'topic' && item.id !== excludeId
-          );
-          setItems(folders);
-        })
-        .catch((err) => {
-          if (!cancelled) {
-            setItems([]);
-            setError(err.message);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setSearching(false);
-        });
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [query, excludeId]);
+  const { items, searching, error, isActive } = useSearchTopics(query, { excludeId });
 
   return (
     <div className={`move-target-picker${compact ? ' move-target-picker-compact' : ''}`}>
@@ -82,7 +42,7 @@ export default function MoveTargetPicker({
       />
       {searching && <p className="folder-contents-muted">Searching…</p>}
       {error && <p className="error">{error}</p>}
-      {!searching && query.trim().length >= 2 && items.length === 0 && !error && (
+      {!searching && isActive && items.length === 0 && !error && (
         <p className="folder-contents-muted">No topics found.</p>
       )}
       {items.length > 0 && (

@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { getTopics } from '../../api';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTopics } from '../../api/hooks/topics';
+import { queryKeys } from '../../query/keys';
 import { FolderIcon, TaskIcon } from './TreeIcons';
 
 function pruneRemovedItems(items, removedId) {
@@ -84,50 +86,30 @@ function TreeNode({
 }
 
 function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFolderId = null }) {
+  const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
-  const [children, setChildren] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const fetchIdRef = useRef(0);
-
-  const loadChildren = (async (requestId) => {
-    setLoading(true);
-    try {
-      const data = await getTopics(node.id);
-      if (requestId !== fetchIdRef.current) return;
-      setChildren(data.items || []);
-    } finally {
-      if (requestId === fetchIdRef.current) setLoading(false);
-    }
-  });
+  const { data, isPending, isFetching } = useTopics(node.id, { enabled: expanded });
+  const children = expanded ? (data?.items ?? null) : null;
+  const loading = expanded && (isPending || isFetching) && !data;
 
   useEffect(() => {
     if (!refreshEvent) return;
 
-    fetchIdRef.current = refreshEvent.id;
-
     const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
     if (removedId != null) {
-      setChildren((prev) => pruneRemovedItems(prev, removedId));
+      queryClient.setQueryData(queryKeys.topics.list(node.id), (old) => {
+        if (!old?.items) return old;
+        return { ...old, items: pruneRemovedItems(old.items, removedId) };
+      });
     }
 
     if (refreshEvent.parentIds?.includes(node.id)) {
       setExpanded(true);
-      loadChildren(refreshEvent.id);
     }
-  }, [refreshEvent?.id]);
+  }, [refreshEvent?.id, node.id, queryClient]);
 
-  async function handleExpandToggle() {
-    if (expanded) {
-      setExpanded(false);
-      return;
-    }
-
-    if (children === null) {
-      const requestId = Date.now();
-      fetchIdRef.current = requestId;
-      await loadChildren(requestId);
-    }
-    setExpanded(true);
+  function handleExpandToggle() {
+    setExpanded((prev) => !prev);
   }
 
   return (
@@ -146,43 +128,24 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
   );
 }
 
-export default function TopicTree({selectedId, onSelect, refreshEvent }) {
-  const [roots, setRoots] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const fetchIdRef = useRef(0);
-  const hasRootsRef = useRef(false);
+export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
+  const queryClient = useQueryClient();
+  const { data, isPending } = useTopics(null);
+  const roots = data?.items ?? [];
 
   useEffect(() => {
-    const requestId = refreshEvent?.id ?? Date.now();
-    fetchIdRef.current = requestId;
+    if (!refreshEvent) return;
 
-  //Optimistic UI gets overwritten by the getTopics anyway if the topic has no parent
-    const removedId = refreshEvent?.movedTopicId ?? refreshEvent?.deletedTopicId;
+    const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
     if (removedId != null) {
-      setRoots((prev) => pruneRemovedItems(prev, removedId));
-    }
-
-    const needsRootReload =
-      refreshEvent == null ||
-      refreshEvent.parentIds?.some((id) => id == null) 
-
-    if (!needsRootReload) return;
-
-    if (!hasRootsRef.current) setLoading(true);
-
-    getTopics(null)
-      .then((data) => {
-        if (requestId !== fetchIdRef.current) return;
-        setRoots(data.items || []);
-        hasRootsRef.current = true;
-      })
-      .finally(() => {
-        if (requestId === fetchIdRef.current) setLoading(false);
+      queryClient.setQueryData(queryKeys.topics.list(null), (old) => {
+        if (!old?.items) return old;
+        return { ...old, items: pruneRemovedItems(old.items, removedId) };
       });
-  }, [refreshEvent?.id]);
+    }
+  }, [refreshEvent?.id, queryClient]);
 
-  // hasRoots is for the initial fetch only to show the spinner later direct swap from roots(old) -> roots(new)
-  if (loading && !hasRootsRef.current) return <p className="tree-muted">Loading…</p>;
+  if (isPending && !data) return <p className="tree-muted">Loading…</p>;
 
   return (
     <div className="topic-tree">

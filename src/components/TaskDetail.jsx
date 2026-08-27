@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { deleteTask, getTopics, patchTask, patchTopic } from '../api';
-import { formatDeleteTaskMessage } from '../utils/deleteMessages';
-import { buildTaskTimeline } from '../utils/taskDates';
+import { deleteTask, patchTask, patchTopic } from '../api';
+import { useTopics } from '../api/hooks/topics';
+import { formatDeleteTaskMessage } from '../utils/deleteMessages';import { buildTaskTimeline } from '../utils/taskDates';
 import ConfirmDialog from './ConfirmDialog';
 import TaskOptions from './TaskOptions';
 
@@ -55,6 +55,8 @@ export default function TaskDetail({
   const canUpdateStatus = taskStatus === 'Pending';
   const timeline = buildTaskTimeline({ ...dates, status: taskStatus });
   const parentId = task.parentId ?? null;
+  const needsParentDates = !dates.createdAt && parentId != null;
+  const { data: parentTopics } = useTopics(parentId, { enabled: needsParentDates });
 
   useEffect(() => {
     setOptionsOpen(false);
@@ -63,27 +65,15 @@ export default function TaskDetail({
   }, [task.id, task.createdAt, task.completedAt, task.canceledAt]);
 
   useEffect(() => {
-    if (dates.createdAt || task.parentId == null) return undefined;
-
-    let cancelled = false;
-    getTopics(task.parentId)
-      .then((data) => {
-        if (cancelled) return;
-        const match = (data.items || []).find((item) => item.id === task.id);
-        if (!match?.createdAt) return;
-        setDates({
-          createdAt: match.createdAt,
-          completedAt: match.completedAt,
-          canceledAt: match.canceledAt,
-        });
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [task.id, task.parentId, dates.createdAt]);
-
+    if (!needsParentDates) return;
+    const match = parentTopics?.items?.find((item) => item.id === task.id);
+    if (!match?.createdAt) return;
+    setDates({
+      createdAt: match.createdAt,
+      completedAt: match.completedAt,
+      canceledAt: match.canceledAt,
+    });
+  }, [needsParentDates, parentTopics, task.id]);
   useEffect(() => {
     if (!optionsOpen) return undefined;
 

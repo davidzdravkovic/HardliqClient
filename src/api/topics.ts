@@ -9,10 +9,6 @@ export function getTopics(parentId?: number | null) {
   return request<TopicListResponse>(`/topics${query ? `?${query}` : ''}`);
 }
 
-export function getFolderTasks(topicId: number) {
-  return request(`/topics/${topicId}/tasks`);
-}
-
 export function getTaskStats(topicId?: number | null, since?: string) {
   const params = new URLSearchParams();
   if (topicId != null) params.set('topicId', String(topicId));
