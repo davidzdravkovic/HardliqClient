@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getTaskStats } from '../api';
+import { queryKeys } from '../query/keys';
 
 function getSinceForPeriod(period) {
   const now = new Date();
@@ -138,36 +140,27 @@ function StatsMetrics({ stats, period, compact = false, panel = false }) {
   );
 }
 
-export default function WorkspaceStats({ topicId, displayName, refreshKey, children, headerMenu }) {
-  const [stats, setStats] = useState(null);
-  const [statsError, setStatsError] = useState(false);
-  const [loading, setLoading] = useState(true);
+/**
+ * @param {{
+ *   topicId: number | null,
+ *   displayName?: string,
+ *   children?: (stats: import('../types/domain/tasks').TaskStats) => import('react').ReactNode,
+ *   headerMenu?: import('react').ReactNode,
+ * }} props
+ */
+export default function WorkspaceStats({ topicId, displayName, children, headerMenu }) {
   const [period, setPeriod] = useState('week');
   const isFolderView = topicId != null;
+  const since = getSinceForPeriod(period);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setStatsError(false);
-
-    getTaskStats(topicId, getSinceForPeriod(period))
-      .then((data) => {
-        if (!cancelled) setStats(data);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStats(null);
-          setStatsError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [topicId, refreshKey, period]);
+  const {
+    data: stats = null,
+    isPending: loading,
+    isError: statsError,
+  } = useQuery({
+    queryKey: queryKeys.stats.detail(topicId, since),
+    queryFn: () => getTaskStats(topicId, since),
+  });
 
   const title = isFolderView
     ? (displayName || stats?.topicName || 'Topic')

@@ -23,7 +23,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const data = await login(username, password);
+      const data = await login({username, password});
       localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       localStorage.setItem(AUTH_USERNAME_KEY, data.username);
       navigate('/app');

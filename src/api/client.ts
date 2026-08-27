@@ -52,6 +52,7 @@ export async function request<T>(url: string, options: RequestInit = {},{ useAut
     throw new Error('Session expired');
   }
 
+  //Data is both types, for to be able to read the Error fields (never returned), always T is returned
   const data = (await res.json().catch(() => ({}))) as T & ErrorBody;
 
   if (!res.ok) {

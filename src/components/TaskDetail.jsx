@@ -39,7 +39,13 @@ function mergeTaskDates(task, patch = {}) {
   };
 }
 
-export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskMoved, onError }) {
+export default function TaskDetail({
+  task,
+  refresh,
+  onTaskPatched,
+  onLeaveTask,
+  onError,
+}) {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -48,6 +54,7 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
   const taskStatus = task.status || 'Pending';
   const canUpdateStatus = taskStatus === 'Pending';
   const timeline = buildTaskTimeline({ ...dates, status: taskStatus });
+  const parentId = task.parentId ?? null;
 
   useEffect(() => {
     setOptionsOpen(false);
@@ -91,7 +98,8 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
   }, [optionsOpen]);
 
   function publishTaskPatch(patch) {
-    onTaskUpdated?.(patch);
+    onTaskPatched?.(patch);
+    refresh?.(parentId);
     if (patch.createdAt || patch.completedAt || patch.canceledAt) {
       setDates((prev) => mergeTaskDates(prev, patch));
     }
@@ -148,12 +156,13 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
     }
   }
 
-  async function handleMove(parentId) {
-    const oldParentId = task.parentId ?? null;
+  async function handleMove(newParentId) {
+    const oldParentId = parentId;
     setSaving(true);
     try {
-      await patchTopic(task.id, { moveParent: true, parentId });
-      onTaskMoved?.(parentId, oldParentId);
+      await patchTopic(task.id, { moveParent: true, parentId: newParentId });
+      onLeaveTask?.();
+      refresh?.([oldParentId, newParentId], { movedTopicId: task.id });
     } catch (err) {
       onError?.(err.message);
       throw err;
@@ -167,7 +176,8 @@ export default function TaskDetail({ task, onTaskUpdated, onTaskDeleted, onTaskM
     try {
       await deleteTask(task.id);
       setDeleteOpen(false);
-      onTaskDeleted?.();
+      onLeaveTask?.();
+      refresh?.(parentId, { deletedTopicId: task.id });
     } catch (err) {
       onError?.(err.message);
     } finally {

@@ -1,5 +1,6 @@
 import { request } from './client';
-import type { TopicListResponse } from '../types/topics';
+import type { TopicListResponse } from '../types/domain/topics';
+import type { TaskStats } from '../types/domain/tasks';
 
 export function getTopics(parentId?: number | null) {
   const params = new URLSearchParams();
@@ -17,7 +18,7 @@ export function getTaskStats(topicId?: number | null, since?: string) {
   if (topicId != null) params.set('topicId', String(topicId));
   if (since) params.set('since', since);
   const query = params.toString();
-  return request(`/topics/stats${query ? `?${query}` : ''}`);
+  return request<TaskStats>(`/topics/stats${query ? `?${query}` : ''}`);
 }
 
 export function searchTopics(q: string, page = 1, pageSize = 20) {
@@ -26,7 +27,7 @@ export function searchTopics(q: string, page = 1, pageSize = 20) {
     page: String(page),
     pageSize: String(pageSize),
   });
-  return request(`/topics/search?${params}`);
+  return request<TopicListResponse>(`/topics/search?${params}`);
 }
 
 export function createTopic(name: string, parentId?: number | null) {

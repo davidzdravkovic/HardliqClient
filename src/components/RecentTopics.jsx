@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getTaskStats, getTopics } from '../api';
+import { queryKeys } from '../query/keys';
 
 function MiniStat({ type, count }) {
   const colors = {
@@ -15,40 +16,26 @@ function MiniStat({ type, count }) {
   );
 }
 
-export default function RecentTopics({ refreshKey, onSelectTopic, onViewAll }) {
-  const [topics, setTopics] = useState([]);
-  const [loading, setLoading] = useState(true);
+async function fetchRecentTopics() {
+  const data = await getTopics(null);
+  const roots = (data.items || []).filter((t) => t.type === 'topic').slice(0, 4);
+  return Promise.all(
+    roots.map(async (topic) => {
+      try {
+        const stats = await getTaskStats(topic.id);
+        return { ...topic, stats };
+      } catch {
+        return { ...topic, stats: null };
+      }
+    }),
+  );
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-
-    getTopics(null)
-      .then(async (data) => {
-        const roots = (data.items || []).filter((t) => t.type === 'topic').slice(0, 4);
-        const withStats = await Promise.all(
-          roots.map(async (topic) => {
-            try {
-              const stats = await getTaskStats(topic.id);
-              return { ...topic, stats };
-            } catch {
-              return { ...topic, stats: null };
-            }
-          })
-        );
-        if (!cancelled) setTopics(withStats);
-      })
-      .catch(() => {
-        if (!cancelled) setTopics([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
+export default function RecentTopics({ onSelectTopic, onViewAll }) {
+  const { data: topics = [], isPending: loading } = useQuery({
+    queryKey: queryKeys.topics.recent,
+    queryFn: fetchRecentTopics,
+  });
 
   if (loading) {
     return (

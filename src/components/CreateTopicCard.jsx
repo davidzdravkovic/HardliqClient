@@ -1,17 +1,21 @@
 import { useState } from 'react';
+import { createTopic } from '../api';
 
-export default function CreateTopicCard({ onSubmit, inputRef }) {
+export default function CreateTopicCard({ refresh, onError, inputRef }) {
   const [topicName, setTopicName] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!topicName.trim()) return;
+    const trimmed = topicName.trim();
+    if (!trimmed) return;
 
+    onError?.('');
     try {
-      await onSubmit(topicName.trim());
+      await createTopic(trimmed, null);
       setTopicName('');
-    } catch {
-      // Dashboard shows the error banner.
+      refresh?.(null);
+    } catch (err) {
+      onError?.(err.message);
     }
   }
 

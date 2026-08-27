@@ -5,6 +5,19 @@ import FolderOptions from './FolderOptions';
 import ConfirmDialog from './ConfirmDialog';
 import { useFolderMutations } from '../hooks/useFolderMutations';
 
+/**
+ * @param {{
+ *   folderId: number,
+ *   folderName: string,
+ *   folderParentId?: number | null,
+ *   refreshKey?: number,
+ *   refresh: import('../types/ui/refreshEvent').RefreshFn,
+ *   onSelectChild: (item: import('../types/ui/selected').SelectionSource | null) => void,
+ *   onError: (message: string) => void,
+ *   onFolderRenamed: (name: string) => void,
+ *   onLeaveFolder: () => void,
+ * }} props
+ */
 export default function FolderWorkspace({
   folderId,
   folderName,
@@ -90,7 +103,6 @@ export default function FolderWorkspace({
       <WorkspaceStats
         topicId={folderId}
         displayName={folderName}
-        refreshKey={refreshKey}
         headerMenu={
           <FolderOptions
             folderName={folderName}

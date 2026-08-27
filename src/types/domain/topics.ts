@@ -1,9 +1,17 @@
 export type TopicChildType = 'topic' | 'task';
 
-export interface TopicListItem {
+export interface FolderListItem {
   id: number;
   name: string;
-  type: TopicChildType;
+  type: 'topic';
+  parentId: number | null;
+  sortOrder: number;
+}
+
+export interface TaskListItem {
+  id: number;
+  name: string;
+  type: 'task';
   parentId: number | null;
   sortOrder: number;
   parentName: string | null;
@@ -13,6 +21,8 @@ export interface TopicListItem {
   completedAt: string | null;
   canceledAt: string | null;
 }
+
+export type TopicListItem = FolderListItem | TaskListItem;
 
 export interface TopicListResponse {
   parentId: number | null;

@@ -1,23 +1,23 @@
 import { request } from './client';
-import type { AuthResponse } from '../types/auth';
+import type { AuthResponse, LoginRequest, RegisterRequest } from '../types/domain/auth';
 
-export function register(username: string, email: string, password: string) {
+export function register(body: RegisterRequest) {
   return request<AuthResponse>(
     '/auth/register',
     {
       method: 'POST',
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify(body),
     },
     { useAuth: false },
   );
 }
 
-export function login(username: string, password: string) {
+export function login(body : LoginRequest) {
   return request<AuthResponse>(
     '/auth/login',
     {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(body),
     },
     { useAuth: false },
   );

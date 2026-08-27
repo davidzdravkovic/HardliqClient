@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-  const username = localStorage.getItem('username') || 'User';
+import { useNavigate } from 'react-router-dom';
+import { clearAuth } from '../../api';
 
+const username = localStorage.getItem('username') || 'User';
 
-export default function UserMenu({ onLogout, compact = false }) {
+export default function UserMenu({ compact = false }) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -22,7 +25,8 @@ export default function UserMenu({ onLogout, compact = false }) {
 
   function handleLogout() {
     setOpen(false);
-    onLogout();
+    clearAuth();
+    navigate('/login');
   }
 
   return (

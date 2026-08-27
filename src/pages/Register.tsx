@@ -16,7 +16,7 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      const data = await register(username, email, password);
+      const data = await register({username, email, password});
       localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       localStorage.setItem(AUTH_USERNAME_KEY, data.username);
       navigate('/app');

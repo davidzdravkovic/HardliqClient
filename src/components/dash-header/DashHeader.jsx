@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import UserMenu from './UserMenu';
 import SearchResults from './SearchResults';
 
-export default function DashHeader({search, onSearchChange,onSearchSelect, onLogout,onMenuClick, /* MOBILE-V1 */}) {
-
+export default function DashHeader({ onSearchSelect, onMenuClick /* MOBILE-V1 */ }) {
+  const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -29,7 +29,7 @@ export default function DashHeader({search, onSearchChange,onSearchSelect, onLog
 
   function handleSelect(item) {
     onSearchSelect?.(item);
-    onSearchChange('');
+    setSearch('');
     setOpen(false);
   }
 
@@ -61,7 +61,7 @@ export default function DashHeader({search, onSearchChange,onSearchSelect, onLog
             className="dash-search"
             placeholder="Search folders or tasks…"
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             onFocus={() => search.trim() && setOpen(true)}
             aria-label="Search folders or tasks"
             aria-expanded={open}
@@ -93,7 +93,7 @@ export default function DashHeader({search, onSearchChange,onSearchSelect, onLog
             <path d="M8.5 15a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
-        <UserMenu onLogout={onLogout} compact />
+        <UserMenu compact />
       </div>
     </header>
   );
