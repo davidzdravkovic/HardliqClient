@@ -1,6 +1,6 @@
 import TopicTree from './TopicTree';
 
-export default function SideBar({ selectedId, onSelect, refreshEvent, onNewTopic }) {
+export default function SideBar({ selectedId, onSelect, onNewTopic }) {
   return (
     <>
       <div className="sidebar-section">
@@ -28,7 +28,6 @@ export default function SideBar({ selectedId, onSelect, refreshEvent, onNewTopic
         <TopicTree
           selectedId={selectedId}
           onSelect={onSelect}
-          refreshEvent={refreshEvent}
         />
       </div>
       <div className="sidebar-footer">

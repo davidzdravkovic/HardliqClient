@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { createTopic } from '../api';
+import { useCreateTopicMutation } from '../api/hooks/mutations/topics';
 
-export default function CreateTopicCard({ refresh, onError, inputRef }) {
+export default function CreateTopicCard({ onError, inputRef }) {
   const [topicName, setTopicName] = useState('');
+  const createTopicMutation = useCreateTopicMutation();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -11,11 +12,10 @@ export default function CreateTopicCard({ refresh, onError, inputRef }) {
 
     onError?.('');
     try {
-      await createTopic(trimmed, null);
+      await createTopicMutation.mutateAsync({ name: trimmed, parentId: null });
       setTopicName('');
-      refresh?.(null);
     } catch (err) {
-      onError?.(err.message);
+      onError?.(err instanceof Error ? err.message : 'Failed to create folder');
     }
   }
 
@@ -34,7 +34,7 @@ export default function CreateTopicCard({ refresh, onError, inputRef }) {
             value={topicName}
             onChange={(e) => setTopicName(e.target.value)}
           />
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-primary" disabled={createTopicMutation.isPending}>
             Create folder
           </button>
         </form>

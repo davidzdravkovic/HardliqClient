@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
-import { deleteTask, patchTask, patchTopic } from '../api';
-import { useTopics } from '../api/hooks/topics';
-import { formatDeleteTaskMessage } from '../utils/deleteMessages';import { buildTaskTimeline } from '../utils/taskDates';
+import { useTaskMutations } from '../hooks/useTaskMutations';
+import type { SelectedTask } from '../types/ui/selected';
+import { formatDeleteTaskMessage } from '../utils/deleteMessages';
+import { buildTaskTimeline } from '../utils/taskDates';
 import ConfirmDialog from './ConfirmDialog';
 import TaskOptions from './TaskOptions';
 
-function TaskStatusIcon({ status }) {
+type TaskStatusIconProps = {
+  status: string | null | undefined;
+};
+
+function TaskStatusIcon({ status }: TaskStatusIconProps) {
   const normalized = (status || 'Pending').toLowerCase();
   if (normalized === 'completed') {
     return (
@@ -31,49 +36,46 @@ function TaskStatusIcon({ status }) {
   );
 }
 
-function mergeTaskDates(task, patch = {}) {
-  return {
-    createdAt: patch.createdAt ?? task.createdAt,
-    completedAt: patch.completedAt ?? task.completedAt,
-    canceledAt: patch.canceledAt ?? task.canceledAt,
-  };
-}
+export type TaskDetailProps = {
+  task: SelectedTask;
+  onTaskPatched?: (patch: Partial<SelectedTask>) => void;
+  onLeaveTask?: () => void;
+  onError?: (message: string) => void;
+};
 
 export default function TaskDetail({
   task,
-  refresh,
   onTaskPatched,
   onLeaveTask,
   onError,
-}) {
+}: TaskDetailProps) {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [dates, setDates] = useState(() => mergeTaskDates(task));
+
+  const {
+    saving,
+    dates,
+    handleRename,
+    handleDescription,
+    handleStatus,
+    handleMove,
+    handleConfirmDelete,
+  } = useTaskMutations({
+    task,
+    onTaskPatched,
+    onLeaveTask,
+    onError,
+  });
 
   const taskStatus = task.status || 'Pending';
   const canUpdateStatus = taskStatus === 'Pending';
   const timeline = buildTaskTimeline({ ...dates, status: taskStatus });
-  const parentId = task.parentId ?? null;
-  const needsParentDates = !dates.createdAt && parentId != null;
-  const { data: parentTopics } = useTopics(parentId, { enabled: needsParentDates });
 
   useEffect(() => {
     setOptionsOpen(false);
     setDeleteOpen(false);
-    setDates(mergeTaskDates(task));
-  }, [task.id, task.createdAt, task.completedAt, task.canceledAt]);
+  }, [task.id]);
 
-  useEffect(() => {
-    if (!needsParentDates) return;
-    const match = parentTopics?.items?.find((item) => item.id === task.id);
-    if (!match?.createdAt) return;
-    setDates({
-      createdAt: match.createdAt,
-      completedAt: match.completedAt,
-      canceledAt: match.canceledAt,
-    });
-  }, [needsParentDates, parentTopics, task.id]);
   useEffect(() => {
     if (!optionsOpen) return undefined;
 
@@ -87,92 +89,9 @@ export default function TaskDetail({
     };
   }, [optionsOpen]);
 
-  function publishTaskPatch(patch) {
-    onTaskPatched?.(patch);
-    refresh?.(parentId);
-    if (patch.createdAt || patch.completedAt || patch.canceledAt) {
-      setDates((prev) => mergeTaskDates(prev, patch));
-    }
-  }
-
-  async function handleRename(name) {
-    setSaving(true);
-    try {
-      const updated = await patchTopic(task.id, { name });
-      publishTaskPatch({ name: updated.name });
-    } catch (err) {
-      onError?.(err.message);
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDescription(description) {
-    setSaving(true);
-    try {
-      const updated = await patchTask(task.id, { description });
-      publishTaskPatch({
-        description: updated.description,
-        status: updated.status,
-        createdAt: updated.createdAt,
-        completedAt: updated.completedAt,
-        canceledAt: updated.canceledAt,
-      });
-    } catch (err) {
-      onError?.(err.message);
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleStatus(status) {
-    setSaving(true);
-    try {
-      const updated = await patchTask(task.id, { status });
-      publishTaskPatch({
-        description: updated.description,
-        status: updated.status,
-        createdAt: updated.createdAt,
-        completedAt: updated.completedAt,
-        canceledAt: updated.canceledAt,
-      });
-    } catch (err) {
-      onError?.(err.message);
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleMove(newParentId) {
-    const oldParentId = parentId;
-    setSaving(true);
-    try {
-      await patchTopic(task.id, { moveParent: true, parentId: newParentId });
-      onLeaveTask?.();
-      refresh?.([oldParentId, newParentId], { movedTopicId: task.id });
-    } catch (err) {
-      onError?.(err.message);
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleConfirmDelete() {
-    setSaving(true);
-    try {
-      await deleteTask(task.id);
-      setDeleteOpen(false);
-      onLeaveTask?.();
-      refresh?.(parentId, { deletedTopicId: task.id });
-    } catch (err) {
-      onError?.(err.message);
-    } finally {
-      setSaving(false);
-    }
+  async function onConfirmDelete() {
+    await handleConfirmDelete();
+    setDeleteOpen(false);
   }
 
   return (
@@ -253,7 +172,7 @@ export default function TaskDetail({
         cancelLabel="Cancel"
         loading={saving}
         danger
-        onConfirm={handleConfirmDelete}
+        onConfirm={onConfirmDelete}
         onCancel={() => !saving && setDeleteOpen(false)}
       />
     </>

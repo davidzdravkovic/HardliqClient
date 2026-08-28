@@ -4,7 +4,8 @@ import type { SelectionSource } from '../../types/ui/selected';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { getTopics, patchTopic } from '../../api';
+import { getTopics } from '../../api/topics';
+import { usePatchTopicMutation } from '../../api/hooks/mutations/topics';
 import { FOLDER_CONTENTS_PAGE_SIZE, useFolderContents } from '../../api/hooks/topics';
 import { useIsMobileSheet } from '../../hooks/useIsMobileSheet';
 import { queryKeys } from '../../query/keys';
@@ -17,7 +18,6 @@ export type TopicDetailProps = {
   folderId: number;
   stats: TaskStats | null;
   onSelectChild: (item: SelectionSource) => void;
-  onContentsChanged: () => void;
   onError: (message: string) => void;
   onChildTypeChange: (childType: TopicChildType | null) => void;
   onListLoadingChange: (loading: boolean) => void;
@@ -29,7 +29,6 @@ export default function TopicDetail({
   folderId,
   stats = null,
   onSelectChild,
-  onContentsChanged,
   onError,
   onChildTypeChange,
   onListLoadingChange,
@@ -44,6 +43,7 @@ export default function TopicDetail({
   const menuRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const isMobileSheet = useIsMobileSheet();
+  const patchTopicMutation = usePatchTopicMutation();
 
   const { data, isPending, isFetching, error } = useFolderContents(folderId, rootPage);
 
@@ -109,7 +109,11 @@ export default function TopicDetail({
       setReorderingId(item.id);
       const pagesLoaded = rootPage;
       try {
-        await patchTopic(item.id, { move: direction });
+        await patchTopicMutation.mutateAsync({
+          topicId: item.id,
+          body: { move: direction },
+          folderId,
+        });
         await queryClient.invalidateQueries({ queryKey: queryKeys.topics.contentsAll(folderId) });
 
         const merged: TopicListItem[] = [];
@@ -123,14 +127,13 @@ export default function TopicDetail({
 
         setRootItems(merged);
         setRootPage(pagesLoaded);
-        onContentsChanged();
       } catch (err: unknown) {
         onError(err instanceof Error ? err.message : 'Failed to reorder');
       } finally {
         setReorderingId(null);
       }
     },
-    [folderId, rootPage, queryClient, onContentsChanged, onError],
+    [folderId, rootPage, queryClient, onError, patchTopicMutation],
   );
 
   const toggle = (

@@ -10,3 +10,30 @@ export interface TaskStats {
   completedSince: number;
   canceledSince: number;
 }
+
+export interface CreateTaskResponse {
+  id: number;
+  name: string;
+  type: 'task';
+  parentId: number | null;
+  sortOrder: number;
+  description: string;
+  status: string;
+  createdAt: string;
+  completedAt: string | null;
+  canceledAt: string | null;
+}
+
+export interface TaskDetailResponse {
+  topicId: number;
+  description: string;
+  status: string;
+  createdAt: string;
+  completedAt: string | null;
+  canceledAt: string | null;
+}
+
+export type PatchTaskBody = {
+  description?: string;
+  status?: string;
+};

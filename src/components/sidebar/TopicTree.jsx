@@ -1,13 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTopics } from '../../api/hooks/topics';
-import { queryKeys } from '../../query/keys';
 import { FolderIcon, TaskIcon } from './TreeIcons';
-
-function pruneRemovedItems(items, removedId) {
-  if (!items || removedId == null) return items;
-  return items.filter((item) => item.id !== removedId);
-}
 
 function TreeNode({
   node,
@@ -19,7 +12,6 @@ function TreeNode({
   children,
   loading,
   parentFolderId,
-  refreshEvent,
 }) {
   const isTask = node.type === 'task';
   const isSelected = selectedId === node.id;
@@ -75,7 +67,6 @@ function TreeNode({
               depth={depth + 1}
               selectedId={selectedId}
               onSelect={onSelect}
-              refreshEvent={refreshEvent}
               parentFolderId={node.id}
             />
           ))}
@@ -85,28 +76,11 @@ function TreeNode({
   );
 }
 
-function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFolderId = null }) {
-  const queryClient = useQueryClient();
+function TreeBranch({ node, depth, selectedId, onSelect, parentFolderId = null }) {
   const [expanded, setExpanded] = useState(false);
   const { data, isPending, isFetching } = useTopics(node.id, { enabled: expanded });
   const children = expanded ? (data?.items ?? null) : null;
   const loading = expanded && (isPending || isFetching) && !data;
-
-  useEffect(() => {
-    if (!refreshEvent) return;
-
-    const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
-    if (removedId != null) {
-      queryClient.setQueryData(queryKeys.topics.list(node.id), (old) => {
-        if (!old?.items) return old;
-        return { ...old, items: pruneRemovedItems(old.items, removedId) };
-      });
-    }
-
-    if (refreshEvent.parentIds?.includes(node.id)) {
-      setExpanded(true);
-    }
-  }, [refreshEvent?.id, node.id, queryClient]);
 
   function handleExpandToggle() {
     setExpanded((prev) => !prev);
@@ -123,27 +97,13 @@ function TreeBranch({ node, depth, selectedId, onSelect, refreshEvent, parentFol
       children={children}
       loading={loading}
       parentFolderId={parentFolderId}
-      refreshEvent={refreshEvent}
     />
   );
 }
 
-export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
-  const queryClient = useQueryClient();
+export default function TopicTree({ selectedId, onSelect }) {
   const { data, isPending } = useTopics(null);
   const roots = data?.items ?? [];
-
-  useEffect(() => {
-    if (!refreshEvent) return;
-
-    const removedId = refreshEvent.movedTopicId ?? refreshEvent.deletedTopicId;
-    if (removedId != null) {
-      queryClient.setQueryData(queryKeys.topics.list(null), (old) => {
-        if (!old?.items) return old;
-        return { ...old, items: pruneRemovedItems(old.items, removedId) };
-      });
-    }
-  }, [refreshEvent?.id, queryClient]);
 
   if (isPending && !data) return <p className="tree-muted">Loading…</p>;
 
@@ -159,7 +119,6 @@ export default function TopicTree({ selectedId, onSelect, refreshEvent }) {
             depth={0}
             selectedId={selectedId}
             onSelect={onSelect}
-            refreshEvent={refreshEvent}
           />
         ))
       )}

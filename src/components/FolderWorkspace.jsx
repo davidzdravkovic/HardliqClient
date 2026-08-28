@@ -10,8 +10,6 @@ import { useFolderMutations } from '../hooks/useFolderMutations';
  *   folderId: number,
  *   folderName: string,
  *   folderParentId?: number | null,
- *   refreshKey?: number,
- *   refresh: import('../types/ui/refreshEvent').RefreshFn,
  *   onSelectChild: (item: import('../types/ui/selected').SelectionSource | null) => void,
  *   onError: (message: string) => void,
  *   onFolderRenamed: (name: string) => void,
@@ -22,8 +20,6 @@ export default function FolderWorkspace({
   folderId,
   folderName,
   folderParentId = null,
-  refreshKey,
-  refresh,
   onSelectChild,
   onError,
   onFolderRenamed,
@@ -44,7 +40,6 @@ export default function FolderWorkspace({
     handleCreateTask,
     handleRenameFolder,
     handleMoveFolder,
-    handleContentsChanged,
     openTopicDeleteConfirm,
     openEmptyFolderConfirm,
     deleteDialog,
@@ -53,7 +48,6 @@ export default function FolderWorkspace({
     folderId,
     folderName,
     folderParentId,
-    refresh,
     onError,
     onFolderRenamed,
     onLeaveFolder,
@@ -145,7 +139,6 @@ export default function FolderWorkspace({
                 open={contentsOpen}
                 onOpenChange={handleContentsOpen}
                 onSelectChild={onSelectChild}
-                onContentsChanged={handleContentsChanged}
                 onChildTypeChange={setChildType}
                 onListLoadingChange={setChildrenLoading}
               />

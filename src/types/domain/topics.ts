@@ -33,3 +33,26 @@ export interface TopicListResponse {
   pageSize: number;
   hasMore: boolean;
 }
+
+export interface TopicResponse {
+  id: number;
+  name: string;
+  type: TopicChildType;
+  parentId: number | null;
+  sortOrder: number;
+}
+
+export type PatchTopicBody = {
+  name?: string;
+  moveParent?: boolean;
+  parentId?: number | null;
+  move?: 'up' | 'down';
+};
+
+export interface DeleteSummaryResponse {
+  topicId: number;
+  name: string;
+  folderCount: number;
+  taskCount: number;
+  totalCount: number;
+}

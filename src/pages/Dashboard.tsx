@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import SideBar from '../components/sidebar/SideBar';
 import Logo from '../components/Logo';
 import DashHeader from '../components/dash-header/DashHeader';
@@ -8,16 +7,12 @@ import FolderWorkspace from '../components/FolderWorkspace';
 import WorkspaceStats from '../components/WorkspaceStats';
 import CreateTopicCard from '../components/CreateTopicCard';
 import RecentTopics from '../components/RecentTopics';
-import { queryKeys } from '../query/keys';
 import type { SelectedItem, SelectedState, SelectionSource } from '../types/ui/selected';
 import { toSelectedItem } from '../types/ui/selected';
-import type { RefreshEvent, RefreshFn} from '../types/ui/refreshEvent';
 
 export default function Dashboard() {
-  const queryClient = useQueryClient();
   const createTopicRef = useRef<HTMLInputElement | null>(null);
   const [selected, setSelected] = useState<SelectedState>(null);
-  const [refreshEvent, setRefreshEvent] = useState<RefreshEvent | null>(null);
   const [error, setError] = useState('');
 
   const isTopicSelected = selected?.type === 'topic';
@@ -35,28 +30,6 @@ export default function Dashboard() {
     setSelected(item ? toSelectedItem(item) : null);
     closeSidebar();
   }
-
-  const refresh: RefreshFn = (parentIds, { deletedTopicId, movedTopicId } = {}) => {
-    const list = Array.isArray(parentIds) ? parentIds : [parentIds];
-    const uniqueParentIds = list.filter(
-      (id, index) => list.findIndex((candidate) => candidate === id) === index,
-    );
-
-    setRefreshEvent({
-      id: Date.now(),
-      parentIds: uniqueParentIds,
-      deletedTopicId,
-      movedTopicId,
-    });
-
-    queryClient.invalidateQueries({ queryKey: queryKeys.topics.all });
-    uniqueParentIds.forEach((parentId) => {
-      if (parentId != null) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.topics.contentsAll(parentId) });
-      }
-    });
-    queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
-  };
 
   function handleNewTopic() {
     setSelected(null);
@@ -86,7 +59,6 @@ export default function Dashboard() {
             selectedId={selected?.id ?? null}
             onNewTopic={handleNewTopic}
             onSelect={selectItem}
-            refreshEvent={refreshEvent}
           />
         </aside>
 
@@ -103,7 +75,6 @@ export default function Dashboard() {
               <section className="workspace-home">
                 <WorkspaceStats topicId={null} />
                 <CreateTopicCard
-                  refresh={refresh}
                   onError={setError}
                   inputRef={createTopicRef}
                 />
@@ -118,8 +89,6 @@ export default function Dashboard() {
                 folderId={selected.id}
                 folderName={selected.name}
                 folderParentId={selected.parentId ?? null}
-                refreshKey={refreshEvent?.id}
-                refresh={refresh}
                 onSelectChild={selectItem}
                 onError={setError}
                 onFolderRenamed={(name: string) =>
@@ -130,7 +99,6 @@ export default function Dashboard() {
             ) : (
               <TaskDetail
                 task={selected}
-                refresh={refresh}
                 onTaskPatched={(patch: Partial<SelectedItem>) =>
                   setSelected((prev) =>
                     prev?.type === 'task' ? { ...prev, ...patch } : prev,

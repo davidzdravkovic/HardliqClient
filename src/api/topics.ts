@@ -1,5 +1,10 @@
 import { request } from './client';
-import type { TopicListResponse } from '../types/domain/topics';
+import type {
+  DeleteSummaryResponse,
+  PatchTopicBody,
+  TopicListResponse,
+  TopicResponse,
+} from '../types/domain/topics';
 import type { TaskStats } from '../types/domain/tasks';
 
 export type GetTopicsOptions = {
@@ -34,51 +39,38 @@ export function searchTopics(q: string, page = 1, pageSize = 20) {
 }
 
 export function createTopic(name: string, parentId?: number | null) {
-  return request('/topics', {
+  return request<TopicResponse>('/topics', {
     method: 'POST',
     body: JSON.stringify({ name, parentId: parentId ?? null }),
   });
 }
 
-export function patchTopic(
-  topicId: number,
-  {
-    name,
-    moveParent,
-    parentId,
-    move,
-  }: {
-    name?: string;
-    moveParent?: boolean;
-    parentId?: number | null;
-    move?: 'up' | 'down';
-  } = {},
-) {
-  const body: Record<string, unknown> = {};
-  if (name !== undefined) body.name = name;
-  if (moveParent) {
-    body.moveParent = true;
-    body.parentId = parentId ?? null;
+export function patchTopic(topicId: number, body: PatchTopicBody = {}) {
+  const payload: Record<string, unknown> = {};
+  if (body.name !== undefined) payload.name = body.name;
+  if (body.moveParent) {
+    payload.moveParent = true;
+    payload.parentId = body.parentId ?? null;
   }
-  if (move !== undefined) body.move = move;
-  return request(`/topics/${topicId}`, {
+  if (body.move !== undefined) payload.move = body.move;
+  return request<TopicResponse>(`/topics/${topicId}`, {
     method: 'PATCH',
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
 }
 
 export function getTopicDeleteSummary(topicId: number) {
-  return request(`/topics/${topicId}/delete-summary`);
+  return request<DeleteSummaryResponse>(`/topics/${topicId}/delete-summary`);
 }
 
 export function deleteTopic(topicId: number) {
-  return request(`/topics/${topicId}`, {
+  return request<void>(`/topics/${topicId}`, {
     method: 'DELETE',
   });
 }
 
 export function emptyTopicChildren(topicId: number) {
-  return request(`/topics/${topicId}/children`, {
+  return request<void>(`/topics/${topicId}/children`, {
     method: 'DELETE',
   });
 }

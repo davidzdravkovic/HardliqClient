@@ -7,6 +7,7 @@ export const queryKeys = {
     contentsAll: (folderId: number) => ['topics', 'contents', folderId] as const,
     search: (q: string) => ['topics', 'search', q] as const,
     recent: ['topics', 'recent'] as const,
+    deleteSummary: (topicId: number) => ['topics', 'delete-summary', topicId] as const,
   },
   stats: {
     all: ['stats'] as const,
