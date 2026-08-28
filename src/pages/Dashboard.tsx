@@ -50,6 +50,11 @@ export default function Dashboard() {
     });
 
     queryClient.invalidateQueries({ queryKey: queryKeys.topics.all });
+    uniqueParentIds.forEach((parentId) => {
+      if (parentId != null) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.topics.contentsAll(parentId) });
+      }
+    });
     queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
   };
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import WorkspaceStats from './WorkspaceStats';
-import TopicDetail from './TopicDetail';
+import TopicDetail from './topic-detail';
 import FolderOptions from './FolderOptions';
 import ConfirmDialog from './ConfirmDialog';
 import { useFolderMutations } from '../hooks/useFolderMutations';
@@ -63,7 +63,6 @@ export default function FolderWorkspace({
     setContentsOpen(false);
     setOptionsOpen(false);
     setChildType(null);
-    setChildrenLoading(true);
     setAddMode(null);
   }, [folderId]);
 
@@ -141,16 +140,14 @@ export default function FolderWorkspace({
             <div className="folder-workspace-controls">
               <TopicDetail
                 folderId={folderId}
-                refreshKey={refreshKey}
-                onSelectChild={onSelectChild}
-                onContentsChanged={handleContentsChanged}
-                onError={onError}
-                onChildTypeChange={setChildType}
-                onListLoadingChange={setChildrenLoading}
                 stats={stats}
-                section="menu"
+                onError={onError}
                 open={contentsOpen}
                 onOpenChange={handleContentsOpen}
+                onSelectChild={onSelectChild}
+                onContentsChanged={handleContentsChanged}
+                onChildTypeChange={setChildType}
+                onListLoadingChange={setChildrenLoading}
               />
             </div>
           </>

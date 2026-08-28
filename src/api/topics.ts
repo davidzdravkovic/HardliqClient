@@ -2,9 +2,16 @@ import { request } from './client';
 import type { TopicListResponse } from '../types/domain/topics';
 import type { TaskStats } from '../types/domain/tasks';
 
-export function getTopics(parentId?: number | null) {
+export type GetTopicsOptions = {
+  page?: number;
+  pageSize?: number;
+};
+
+export function getTopics(parentId?: number | null, options?: GetTopicsOptions) {
   const params = new URLSearchParams();
   if (parentId != null) params.set('parentId', String(parentId));
+  if (options?.page != null) params.set('page', String(options.page));
+  if (options?.pageSize != null) params.set('pageSize', String(options.pageSize));
   const query = params.toString();
   return request<TopicListResponse>(`/topics${query ? `?${query}` : ''}`);
 }
