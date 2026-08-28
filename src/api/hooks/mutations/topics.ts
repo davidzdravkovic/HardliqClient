@@ -3,6 +3,7 @@ import {
   clearFolderContents,
   invalidateStatsAndRecent,
   invalidateTopicContents,
+  invalidateTopicList,
   moveListItem,
   patchListItemName,
   removeListItem,
@@ -67,8 +68,12 @@ export function usePatchTopicMutation() {
         queryClient.invalidateQueries({ queryKey: queryKeys.topics.all });
       }
 
-      if (body.move && folderId != null) {
-        invalidateTopicContents(queryClient, folderId);
+      if (body.move) {
+        const parentId = folderId ?? data.parentId ?? null;
+        invalidateTopicList(queryClient, parentId);
+        if (parentId != null) {
+          invalidateTopicContents(queryClient, parentId);
+        }
       }
 
       if (body.name !== undefined && listParentId != null) {

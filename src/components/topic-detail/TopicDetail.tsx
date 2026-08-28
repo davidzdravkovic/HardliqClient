@@ -114,7 +114,6 @@ export default function TopicDetail({
           body: { move: direction },
           folderId,
         });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.topics.contentsAll(folderId) });
 
         const merged: TopicListItem[] = [];
         for (let page = 1; page <= pagesLoaded; page += 1) {

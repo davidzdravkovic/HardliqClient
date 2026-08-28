@@ -191,6 +191,10 @@ export function invalidateTopicContents(queryClient: QueryClient, folderId: numb
   queryClient.invalidateQueries({ queryKey: queryKeys.topics.contentsAll(folderId) });
 }
 
+export function invalidateTopicList(queryClient: QueryClient, parentId: number | null) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.topics.list(parentId) });
+}
+
 export function invalidateStatsAndRecent(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.topics.recent });
