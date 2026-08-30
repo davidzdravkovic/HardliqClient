@@ -32,9 +32,24 @@ export default function AskChat({ onSelectSource }: AskChatProps) {
 
   useEffect(() => {
     if (open) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({
+        behavior: isMobile ? 'auto' : 'smooth',
+        block: 'end',
+      });
     }
-  }, [open, messages, loading]);
+  }, [open, messages, loading, isMobile]);
+
+  useEffect(() => {
+    if (!open || !isMobile) return undefined;
+
+    const { body } = document;
+    const prevOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+
+    return () => {
+      body.style.overflow = prevOverflow;
+    };
+  }, [open, isMobile]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -149,18 +164,18 @@ export default function AskChat({ onSelectSource }: AskChatProps) {
             <div ref={messagesEndRef} />
           </div>
 
-          {error && <p className="ask-panel__error">{error}</p>}
-
           <form className="ask-panel__form" onSubmit={handleSubmit}>
+            {error && <p className="ask-panel__error">{error}</p>}
             <div className="ask-panel__composer">
               <textarea
                 ref={inputRef}
                 className="ask-panel__input"
-                rows={isMobile ? 1 : 3}
+                rows={isMobile ? 2 : 3}
                 placeholder="Ask about priorities, stuck tasks, or your week…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={loading}
+                enterKeyHint="send"
               />
               <button
                 type="submit"
