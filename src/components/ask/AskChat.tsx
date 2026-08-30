@@ -2,8 +2,15 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { postAsk } from '../../api/ask';
 import type { AskSource } from '../../types/domain/ask';
 import type { AskMessage } from '../../types/domain/ask';
+import { useIsMobileSheet } from '../../hooks/useIsMobileSheet';
 import AskLoadingDots from './AskLoadingDots';
 import AskMessageBubble from './AskMessageBubble';
+
+const ASK_HINTS = [
+  'What should I prioritize this week?',
+  'Where am I losing momentum?',
+  'Summarize my open work',
+] as const;
 
 function newId() {
   return crypto.randomUUID();
@@ -14,12 +21,14 @@ type AskChatProps = {
 };
 
 export default function AskChat({ onSelectSource }: AskChatProps) {
+  const isMobile = useIsMobileSheet();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<AskMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -56,10 +65,37 @@ export default function AskChat({ onSelectSource }: AskChatProps) {
     }
   }
 
+  function applyHint(hint: string) {
+    setInput(hint);
+    inputRef.current?.focus();
+  }
+
+  const rootClass = [
+    'ask-root',
+    open && 'ask-root--open',
+    isMobile && 'ask-root--mobile',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className="ask-root">
+    <div className={rootClass}>
+      {open && isMobile && (
+        <button
+          type="button"
+          className="ask-backdrop"
+          aria-label="Close ask panel"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
       {open && (
-        <section className="ask-panel" aria-label="Ask AI">
+        <section
+          className={`ask-panel${isMobile ? ' ask-panel--mobile' : ''}`}
+          aria-label="Ask AI"
+        >
+          {isMobile && <div className="ask-panel__handle" aria-hidden="true" />}
+
           <header className="ask-panel__header">
             <div className="ask-panel__title-wrap">
               <span className="ask-panel__icon" aria-hidden="true">
@@ -83,11 +119,20 @@ export default function AskChat({ onSelectSource }: AskChatProps) {
           <div className="ask-panel__messages">
             {messages.length === 0 && (
               <div className="ask-panel__empty">
-                <p className="ask-panel__empty-title">Explore</p>
+                <p className="ask-panel__empty-title">Try asking</p>
                 <ul className="ask-panel__hints">
-                  <li>What should I prioritize this week?</li>
-                  <li>Where am I losing momentum?</li>
-                  <li>Give me a smart summary of open work</li>
+                  {ASK_HINTS.map((hint) => (
+                    <li key={hint}>
+                      <button
+                        type="button"
+                        className="ask-hint-chip"
+                        disabled={loading}
+                        onClick={() => applyHint(hint)}
+                      >
+                        {hint}
+                      </button>
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -107,21 +152,28 @@ export default function AskChat({ onSelectSource }: AskChatProps) {
           {error && <p className="ask-panel__error">{error}</p>}
 
           <form className="ask-panel__form" onSubmit={handleSubmit}>
-            <textarea
-              className="ask-panel__input"
-              rows={3}
-              placeholder="Ask for insights, priorities, or a smarter view…"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              className="ask-panel__send btn btn-primary"
-              disabled={loading || !input.trim()}
-            >
-              Send
-            </button>
+            <div className="ask-panel__composer">
+              <textarea
+                ref={inputRef}
+                className="ask-panel__input"
+                rows={isMobile ? 1 : 3}
+                placeholder="Ask about priorities, stuck tasks, or your week…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                className="ask-panel__send btn btn-primary"
+                disabled={loading || !input.trim()}
+                aria-label="Send question"
+              >
+                <span className="ask-panel__send-label">Send</span>
+                <span className="ask-panel__send-icon" aria-hidden="true">
+                  ↑
+                </span>
+              </button>
+            </div>
           </form>
         </section>
       )}
