@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearAuth } from '../../api';
-
-const username = localStorage.getItem('username') || 'User';
+import { AUTH_USERNAME_KEY, clearSession } from '../../api';
 
 export default function UserMenu({ compact = false }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const username = localStorage.getItem(AUTH_USERNAME_KEY) || 'User';
 
   useEffect(() => {
     if (!open) return undefined;
@@ -25,7 +24,7 @@ export default function UserMenu({ compact = false }) {
 
   function handleLogout() {
     setOpen(false);
-    clearAuth();
+    clearSession();
     navigate('/login');
   }
 

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, login } from '../api';
+import { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, clearSession, login } from '../api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login({username, password});
+      clearSession();
       localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       localStorage.setItem(AUTH_USERNAME_KEY, data.username);
       navigate('/app');

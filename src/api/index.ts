@@ -1,4 +1,4 @@
-export { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, clearAuth } from './client';
+export { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, clearAuth, clearSession } from './client';
 export { login, register } from './auth';
 export {
   getTopics,

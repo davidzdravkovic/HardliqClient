@@ -1,3 +1,5 @@
+import { queryClient } from '../query/client';
+
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5157';
 
 export const AUTH_TOKEN_KEY : string = 'token';
@@ -6,6 +8,11 @@ export const AUTH_USERNAME_KEY : string = 'username';
 export function clearAuth() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USERNAME_KEY);
+}
+
+export function clearSession() {
+  clearAuth();
+  queryClient.clear();
 }
 
 function buildHeaders(useAuth: boolean): Record<string, string> {
@@ -22,7 +29,7 @@ function buildHeaders(useAuth: boolean): Record<string, string> {
 }
 
 function logoutExpiredSession() {
-  clearAuth();
+  clearSession();
   if (window.location.pathname !== '/login') {
     window.location.replace('/login?expired=1');
   }

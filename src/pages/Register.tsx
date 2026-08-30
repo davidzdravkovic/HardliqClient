@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, register } from '../api';
+import { AUTH_TOKEN_KEY, AUTH_USERNAME_KEY, clearSession, register } from '../api';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function Register() {
     setLoading(true);
     try {
       const data = await register({username, email, password});
+      clearSession();
       localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       localStorage.setItem(AUTH_USERNAME_KEY, data.username);
       navigate('/app');
