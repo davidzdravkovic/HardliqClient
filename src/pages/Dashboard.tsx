@@ -9,6 +9,7 @@ import CreateTopicCard from '../components/CreateTopicCard';
 import RecentTopics from '../components/RecentTopics';
 import type { SelectedItem, SelectedState, SelectionSource } from '../types/ui/selected';
 import { toSelectedItem } from '../types/ui/selected';
+import AskChatGate from '../components/ask/AskChatGate';
 
 export default function Dashboard() {
   const createTopicRef = useRef<HTMLInputElement | null>(null);
@@ -111,6 +112,19 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
+
+      {/* ASK-CHAT START — revert: remove import + AskChatGate + ask.css in main.jsx */}
+      <AskChatGate
+        onSelectSource={(source) =>
+          selectItem({
+            id: source.topicId,
+            name: source.name,
+            type: 'task',
+            parentId: null,
+          })
+        }
+      />
+      {/* ASK-CHAT END */}
     </div>
   );
 }

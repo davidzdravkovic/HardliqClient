@@ -7,7 +7,9 @@ RUN npm ci
 COPY . .
 
 ARG VITE_API_URL=/api
+ARG VITE_ENABLE_ASK=false
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_ENABLE_ASK=$VITE_ENABLE_ASK
 RUN npm run build
 
 FROM nginx:1.27-alpine AS final
